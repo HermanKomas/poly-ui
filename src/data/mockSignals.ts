@@ -5,6 +5,7 @@ export const mockSignals: Signal[] = [
     id: 1,
     sport: 'NBA',
     betType: 'Totals',
+    marketTitle: 'Lakers @ Warriors Total Points Over/Under 224.5',
     matchup: {
       away: 'Lakers',
       home: 'Warriors',
@@ -47,6 +48,7 @@ export const mockSignals: Signal[] = [
     id: 2,
     sport: 'NHL',
     betType: 'Moneyline',
+    marketTitle: 'Bruins @ Rangers Moneyline',
     matchup: {
       away: 'Bruins',
       home: 'Rangers',
@@ -88,6 +90,7 @@ export const mockSignals: Signal[] = [
     id: 3,
     sport: 'NFL',
     betType: 'Spread',
+    marketTitle: 'Chiefs @ Bills Point Spread',
     matchup: {
       away: 'Chiefs',
       home: 'Bills',
@@ -131,6 +134,7 @@ export const mockSignals: Signal[] = [
     id: 4,
     sport: 'CBB',
     betType: 'Totals',
+    marketTitle: 'Duke @ UNC Total Points Over/Under 152.5',
     matchup: {
       away: 'Duke',
       home: 'UNC',
@@ -171,6 +175,7 @@ export const mockSignals: Signal[] = [
     id: 5,
     sport: 'CFB',
     betType: 'Spread',
+    marketTitle: 'Ohio State @ Michigan Point Spread',
     matchup: {
       away: 'Ohio State',
       home: 'Michigan',
@@ -212,6 +217,7 @@ export const mockSignals: Signal[] = [
     id: 6,
     sport: 'NBA',
     betType: 'Spread',
+    marketTitle: 'Celtics @ Heat Point Spread',
     matchup: {
       away: 'Celtics',
       home: 'Heat',
