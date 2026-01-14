@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { Signal, Sport } from '@/types/signal';
-import { getSignalWhalePositions, ApiWhalePosition } from '@/lib/api';
+import { getSignalWhalePositions, type ApiWhalePosition } from '@/lib/api';
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
