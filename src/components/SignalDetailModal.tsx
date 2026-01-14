@@ -52,6 +52,56 @@ function formatDateTime(date: Date): string {
   }).format(date);
 }
 
+function formatSignalAsMarkdown(
+  signal: Signal,
+  whalePositions: ApiWhalePosition[],
+  priceDiffDisplay: string
+): string {
+  const lines: string[] = [
+    `# ${signal.marketTitle}`,
+    `**${signal.sport} ${signal.betType}** | ${formatDateTime(signal.matchup.gameTime)}`,
+    '',
+    '## The Pick',
+    `**${signal.pick.side}**`,
+    `- Entry: ${formatPrice(signal.pick.entryPrice)}`,
+    `- Current: ${formatPrice(signal.pick.currentPrice)} (${priceDiffDisplay})`,
+    '',
+    '## Signal Strength',
+    `| Metric | Value |`,
+    `|--------|-------|`,
+    `| Consensus | ${signal.signal.consensusPercent}% |`,
+    `| Whale Count | ${signal.signal.whaleCount} traders |`,
+    `| Total Volume | ${formatCurrency(signal.signal.totalVolume)} |`,
+    `| Signal Score | ${signal.signal.signalScore.toFixed(2)}${signal.signal.tier ? ` (Tier ${signal.signal.tier})` : ''} |`,
+    `| R/R Ratio | ${signal.signal.rrRatio.toFixed(2)}:1 |`,
+    '',
+  ];
+
+  if (whalePositions.length > 0) {
+    lines.push('## Whale Positions');
+    lines.push('| Trader | Position | Entry |');
+    lines.push('|--------|----------|-------|');
+    for (const whale of whalePositions) {
+      const name = whale.username || `${whale.trader_wallet.slice(0, 8)}...`;
+      const rank = whale.rank ? ` #${whale.rank}` : '';
+      lines.push(`| ${name}${rank} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
+    }
+    lines.push('');
+  }
+
+  lines.push('## Checklist');
+  lines.push(`- ${signal.checklist.consensusPass ? '[x]' : '[ ]'} Consensus ≥80%`);
+  lines.push(`- ${signal.checklist.traderCountPass ? '[x]' : '[ ]'} Traders ≥3`);
+  lines.push(`- ${signal.checklist.priceCeilingPass ? '[x]' : '[ ]'} Price ≤55¢`);
+  lines.push(`- ${signal.checklist.rrRatioPass ? '[x]' : '[ ]'} R/R ≥1.0:1`);
+  lines.push(`- ${signal.checklist.noHedging ? '[x]' : '[ ]'} No hedging`);
+  lines.push(`- ${signal.checklist.noEliteConflict ? '[x]' : '[ ]'} No elite conflicts`);
+  lines.push('');
+  lines.push(`[View on Polymarket](${signal.polymarketUrl})`);
+
+  return lines.join('\n');
+}
+
 export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailModalProps) {
   // Fetch whale positions when modal opens
   const {
@@ -88,55 +138,10 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
 
   const whalePositions = whalePositionsData?.positions || [];
 
-  function formatSignalAsMarkdown(): string {
-    const lines: string[] = [
-      `# ${signal.marketTitle}`,
-      `**${signal.sport} ${signal.betType}** | ${formatDateTime(signal.matchup.gameTime)}`,
-      '',
-      '## The Pick',
-      `**${signal.pick.side}**`,
-      `- Entry: ${formatPrice(signal.pick.entryPrice)}`,
-      `- Current: ${formatPrice(signal.pick.currentPrice)} (${priceDiffDisplay})`,
-      '',
-      '## Signal Strength',
-      `| Metric | Value |`,
-      `|--------|-------|`,
-      `| Consensus | ${signal.signal.consensusPercent}% |`,
-      `| Whale Count | ${signal.signal.whaleCount} traders |`,
-      `| Total Volume | ${formatCurrency(signal.signal.totalVolume)} |`,
-      `| Signal Score | ${signal.signal.signalScore.toFixed(2)}${signal.signal.tier ? ` (Tier ${signal.signal.tier})` : ''} |`,
-      `| R/R Ratio | ${signal.signal.rrRatio.toFixed(2)}:1 |`,
-      '',
-    ];
-
-    if (whalePositions.length > 0) {
-      lines.push('## Whale Positions');
-      lines.push('| Trader | Position | Entry |');
-      lines.push('|--------|----------|-------|');
-      for (const whale of whalePositions) {
-        const name = whale.username || `${whale.trader_wallet.slice(0, 8)}...`;
-        const rank = whale.rank ? ` #${whale.rank}` : '';
-        lines.push(`| ${name}${rank} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
-      }
-      lines.push('');
-    }
-
-    lines.push('## Checklist');
-    lines.push(`- ${signal.checklist.consensusPass ? '[x]' : '[ ]'} Consensus ≥80%`);
-    lines.push(`- ${signal.checklist.traderCountPass ? '[x]' : '[ ]'} Traders ≥3`);
-    lines.push(`- ${signal.checklist.priceCeilingPass ? '[x]' : '[ ]'} Price ≤55¢`);
-    lines.push(`- ${signal.checklist.rrRatioPass ? '[x]' : '[ ]'} R/R ≥1.0:1`);
-    lines.push(`- ${signal.checklist.noHedging ? '[x]' : '[ ]'} No hedging`);
-    lines.push(`- ${signal.checklist.noEliteConflict ? '[x]' : '[ ]'} No elite conflicts`);
-    lines.push('');
-    lines.push(`[View on Polymarket](${signal.polymarketUrl})`);
-
-    return lines.join('\n');
-  }
-
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(formatSignalAsMarkdown());
+      // signal is guaranteed non-null here (checked above)
+      await navigator.clipboard.writeText(formatSignalAsMarkdown(signal!, whalePositions, priceDiffDisplay));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
