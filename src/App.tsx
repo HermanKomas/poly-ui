@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Toaster } from 'sonner'
 import { Header } from '@/components/Header'
 import { SignalGrid } from '@/components/SignalGrid'
 import { SignalDetailModal } from '@/components/SignalDetailModal'
@@ -108,6 +109,8 @@ function App() {
         open={modalOpen}
         onOpenChange={setModalOpen}
       />
+
+      <Toaster position="bottom-center" />
     </div>
   )
 }

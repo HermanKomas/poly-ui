@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Copy, Check, BookOpen, RefreshCw, AlertTriangle, Save, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Copy, Check, BookOpen, RefreshCw, AlertTriangle, Save, Loader2, Pencil } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -166,6 +167,7 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
   const [journalEntry, setJournalEntry] = useState<ApiJournalEntry | null>(null);
   const [journalNotes, setJournalNotes] = useState('');
   const [journalError, setJournalError] = useState<string | null>(null);
+  const [notesExpanded, setNotesExpanded] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -204,6 +206,7 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
       setJournalEntry(null);
       setJournalNotes('');
       setJournalError(null);
+      setNotesExpanded(false);
     }
   }, [open]);
 
@@ -234,9 +237,12 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
     onSuccess: (data) => {
       setJournalEntry(data);
       setJournalError(null);
+      setNotesExpanded(false);
+      toast.success('Note saved');
     },
     onError: (error: Error) => {
       setJournalError(error.message);
+      toast.error('Failed to save note');
     },
   });
 
@@ -560,45 +566,80 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
                     </div>
                   </div>
 
-                  {/* Notes section */}
-                  <div className="bg-muted rounded-lg p-4 space-y-2">
-                    <label className="text-sm text-muted-foreground">Notes</label>
-                    <textarea
-                      className="w-full bg-background border rounded-md p-2 text-sm"
-                      placeholder="Add notes about your trade..."
-                      rows={2}
-                      value={journalNotes}
-                      onChange={(e) => setJournalNotes(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateNotesMutation.mutate()}
-                        disabled={updateNotesMutation.isPending || journalNotes === (journalEntry.thesis || '')}
-                      >
-                        {updateNotesMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        <span className="ml-1">Save Notes</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => refreshMutation.mutate()}
-                        disabled={refreshMutation.isPending}
-                      >
-                        {refreshMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-4 w-4" />
-                        )}
-                        <span className="ml-1">Refresh</span>
-                      </Button>
+                  {/* Notes section - collapsed view */}
+                  {!notesExpanded && (
+                    <div className="flex items-center justify-between">
+                      {journalEntry.thesis ? (
+                        <p className="text-sm text-muted-foreground italic truncate flex-1 mr-2">
+                          "{journalEntry.thesis}"
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No notes</p>
+                      )}
+                      <div className="flex gap-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setNotesExpanded(true)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="ml-1">{journalEntry.thesis ? 'Edit' : 'Add Note'}</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => refreshMutation.mutate()}
+                          disabled={refreshMutation.isPending}
+                        >
+                          {refreshMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Notes section - expanded view */}
+                  {notesExpanded && (
+                    <div className="bg-muted rounded-lg p-4 space-y-2">
+                      <label className="text-sm text-muted-foreground">Notes</label>
+                      <textarea
+                        className="w-full bg-background border rounded-md p-2 text-sm"
+                        placeholder="Add notes about your trade..."
+                        rows={2}
+                        value={journalNotes}
+                        onChange={(e) => setJournalNotes(e.target.value)}
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateNotesMutation.mutate()}
+                          disabled={updateNotesMutation.isPending || journalNotes === (journalEntry.thesis || '')}
+                        >
+                          {updateNotesMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          <span className="ml-1">Save</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setJournalNotes(journalEntry.thesis || '');
+                            setNotesExpanded(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
