@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Copy, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +85,64 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
     : `${(priceDiff * 100).toFixed(0)}¢`;
 
   const whalePositions = whalePositionsData?.positions || [];
+
+  const [copied, setCopied] = useState(false);
+
+  function formatSignalAsMarkdown(): string {
+    const lines: string[] = [
+      `# ${signal.marketTitle}`,
+      `**${signal.sport} ${signal.betType}** | ${formatDateTime(signal.matchup.gameTime)}`,
+      '',
+      '## The Pick',
+      `**${signal.pick.side}**`,
+      `- Entry: ${formatPrice(signal.pick.entryPrice)}`,
+      `- Current: ${formatPrice(signal.pick.currentPrice)} (${priceDiffDisplay})`,
+      '',
+      '## Signal Strength',
+      `| Metric | Value |`,
+      `|--------|-------|`,
+      `| Consensus | ${signal.signal.consensusPercent}% |`,
+      `| Whale Count | ${signal.signal.whaleCount} traders |`,
+      `| Total Volume | ${formatCurrency(signal.signal.totalVolume)} |`,
+      `| Signal Score | ${signal.signal.signalScore.toFixed(2)}${signal.signal.tier ? ` (Tier ${signal.signal.tier})` : ''} |`,
+      `| R/R Ratio | ${signal.signal.rrRatio.toFixed(2)}:1 |`,
+      '',
+    ];
+
+    if (whalePositions.length > 0) {
+      lines.push('## Whale Positions');
+      lines.push('| Trader | Position | Entry |');
+      lines.push('|--------|----------|-------|');
+      for (const whale of whalePositions) {
+        const name = whale.username || `${whale.trader_wallet.slice(0, 8)}...`;
+        const rank = whale.rank ? ` #${whale.rank}` : '';
+        lines.push(`| ${name}${rank} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
+      }
+      lines.push('');
+    }
+
+    lines.push('## Checklist');
+    lines.push(`- ${signal.checklist.consensusPass ? '[x]' : '[ ]'} Consensus ≥80%`);
+    lines.push(`- ${signal.checklist.traderCountPass ? '[x]' : '[ ]'} Traders ≥3`);
+    lines.push(`- ${signal.checklist.priceCeilingPass ? '[x]' : '[ ]'} Price ≤55¢`);
+    lines.push(`- ${signal.checklist.rrRatioPass ? '[x]' : '[ ]'} R/R ≥1.0:1`);
+    lines.push(`- ${signal.checklist.noHedging ? '[x]' : '[ ]'} No hedging`);
+    lines.push(`- ${signal.checklist.noEliteConflict ? '[x]' : '[ ]'} No elite conflicts`);
+    lines.push('');
+    lines.push(`[View on Polymarket](${signal.polymarketUrl})`);
+
+    return lines.join('\n');
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(formatSignalAsMarkdown());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,12 +252,17 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
             </div>
           </section>
 
-          {/* Polymarket Link */}
-          <Button asChild className="w-full">
-            <a href={signal.polymarketUrl} target="_blank" rel="noopener noreferrer">
-              View on Polymarket ↗
-            </a>
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button asChild className="flex-1">
+              <a href={signal.polymarketUrl} target="_blank" rel="noopener noreferrer">
+                View on Polymarket ↗
+              </a>
+            </Button>
+            <Button variant="outline" onClick={handleCopy} className="px-3">
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
