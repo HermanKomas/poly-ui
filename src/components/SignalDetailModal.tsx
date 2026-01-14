@@ -77,6 +77,8 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
     }
   }, [open, signal?.id, refetch]);
 
+  const [copied, setCopied] = useState(false);
+
   if (!signal) return null;
 
   const priceDiff = signal.pick.currentPrice - signal.pick.entryPrice;
@@ -85,8 +87,6 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
     : `${(priceDiff * 100).toFixed(0)}¢`;
 
   const whalePositions = whalePositionsData?.positions || [];
-
-  const [copied, setCopied] = useState(false);
 
   function formatSignalAsMarkdown(): string {
     const lines: string[] = [
