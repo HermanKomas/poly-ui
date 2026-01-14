@@ -79,12 +79,14 @@ function formatSignalAsMarkdown(
 
   if (whalePositions.length > 0) {
     lines.push('## Whale Positions');
-    lines.push('| Trader | Position | Entry |');
-    lines.push('|--------|----------|-------|');
+    lines.push('| Trader | Side | Position | Entry |');
+    lines.push('|--------|------|----------|-------|');
     for (const whale of whalePositions) {
       const name = whale.username || `${whale.trader_wallet.slice(0, 8)}...`;
       const rank = whale.rank ? ` #${whale.rank}` : '';
-      lines.push(`| ${name}${rank} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
+      const matchesPick = whale.outcome === signal.pick.side;
+      const sideIndicator = matchesPick ? '✓' : '✗';
+      lines.push(`| ${name}${rank} | ${sideIndicator} ${whale.outcome} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
     }
     lines.push('');
   }
@@ -222,18 +224,28 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
               {isLoadingPositions ? (
                 <p className="text-sm text-muted-foreground">Loading whale positions...</p>
               ) : whalePositions.length > 0 ? (
-                whalePositions.map((whale: ApiWhalePosition) => (
-                  <div key={whale.id || whale.trader_wallet} className="flex justify-between text-sm">
-                    <span>
-                      {whale.rank && whale.rank <= 10 ? '🐋' : '🦈'}{' '}
-                      {whale.username || `${whale.trader_wallet.slice(0, 8)}...`}
-                      {whale.rank && <span className="text-muted-foreground ml-1">#{whale.rank}</span>}
-                    </span>
-                    <span className="font-mono">
-                      {formatCurrency(whale.current_value)} @ {formatPrice(whale.avg_price)}
-                    </span>
-                  </div>
-                ))
+                whalePositions.map((whale: ApiWhalePosition) => {
+                  const matchesPick = whale.outcome === signal.pick.side;
+                  return (
+                    <div key={whale.id || whale.trader_wallet} className="flex justify-between text-sm gap-2">
+                      <span className="flex items-center gap-1 min-w-0">
+                        {whale.rank && whale.rank <= 10 ? '🐋' : '🦈'}{' '}
+                        <span className="truncate">
+                          {whale.username || `${whale.trader_wallet.slice(0, 8)}...`}
+                        </span>
+                        {whale.rank && <span className="text-muted-foreground">#{whale.rank}</span>}
+                      </span>
+                      <span className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${matchesPick ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                          {matchesPick ? '✓' : '✗'} {whale.outcome}
+                        </span>
+                        <span className="font-mono">
+                          {formatCurrency(whale.current_value)} @ {formatPrice(whale.avg_price)}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {USE_MOCK_DATA
