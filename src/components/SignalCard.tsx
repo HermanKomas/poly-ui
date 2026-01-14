@@ -38,9 +38,7 @@ export function SignalCard({ signal, onClick }: SignalCardProps) {
         </div>
 
         <h3 className="font-semibold text-lg mb-1">
-          {signal.matchup.home
-            ? `${signal.matchup.away} vs. ${signal.matchup.home}`
-            : signal.matchup.away}
+          {signal.marketTitle}
         </h3>
         <p className="text-muted-foreground mb-3">{signal.pick.side}</p>
 

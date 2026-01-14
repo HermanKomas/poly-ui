@@ -12,6 +12,7 @@ export interface Signal {
   id: number;
   sport: Sport;
   betType: BetType;
+  marketTitle: string;
   matchup: {
     away: string;
     home: string;
@@ -130,6 +131,7 @@ export function transformApiSignal(apiSignal: {
     id: apiSignal.id,
     sport: apiSignal.sport as Sport,
     betType,
+    marketTitle: apiSignal.market_title || apiSignal.event_title || 'Unknown',
     matchup: {
       away,
       home,
