@@ -143,6 +143,7 @@ export async function getTraderPositions(wallet: string, sport?: string): Promis
 export async function getSignalWhalePositions(signalId: number): Promise<{
   positions: ApiWhalePosition[];
   count: number;
+  signal_outcome: string;
 }> {
   return fetchApi(`/api/signals/${signalId}/positions`);
 }

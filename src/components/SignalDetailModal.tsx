@@ -78,15 +78,37 @@ function formatSignalAsMarkdown(
   ];
 
   if (whalePositions.length > 0) {
+    // Group positions by outcome
+    const byOutcome = whalePositions.reduce((acc, pos) => {
+      if (!acc[pos.outcome]) acc[pos.outcome] = [];
+      acc[pos.outcome].push(pos);
+      return acc;
+    }, {} as Record<string, ApiWhalePosition[]>);
+
+    // Sort outcomes: pick's side first
+    const sortedOutcomes = Object.keys(byOutcome).sort((a, b) => {
+      if (a === signal.pick.side) return -1;
+      if (b === signal.pick.side) return 1;
+      return a.localeCompare(b);
+    });
+
     lines.push('## Whale Positions');
-    lines.push('| Trader | Side | Position | Entry |');
-    lines.push('|--------|------|----------|-------|');
-    for (const whale of whalePositions) {
-      const name = whale.username || `${whale.trader_wallet.slice(0, 8)}...`;
-      const rank = whale.rank ? ` #${whale.rank}` : '';
-      const matchesPick = whale.outcome === signal.pick.side;
-      const sideIndicator = matchesPick ? '✓' : '✗';
-      lines.push(`| ${name}${rank} | ${sideIndicator} ${whale.outcome} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
+    for (const outcome of sortedOutcomes) {
+      const positions = byOutcome[outcome];
+      const isPick = outcome === signal.pick.side;
+      const totalVolume = positions.reduce((sum, p) => sum + p.current_value, 0);
+
+      lines.push('');
+      lines.push(`### ${isPick ? '✓' : '✗'} ${outcome}`);
+      lines.push(`${positions.length} traders · ${formatCurrency(totalVolume)}`);
+      lines.push('');
+      lines.push('| Trader | Position | Entry |');
+      lines.push('|--------|----------|-------|');
+      for (const whale of positions) {
+        const name = whale.username || `${whale.trader_wallet.slice(0, 8)}...`;
+        const rank = whale.rank ? ` #${whale.rank}` : '';
+        lines.push(`| ${name}${rank} | ${formatCurrency(whale.current_value)} | ${formatPrice(whale.avg_price)} |`);
+      }
     }
     lines.push('');
   }
@@ -139,6 +161,32 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
     : `${(priceDiff * 100).toFixed(0)}¢`;
 
   const whalePositions = whalePositionsData?.positions || [];
+
+  // Group positions by outcome
+  const positionsByOutcome = whalePositions.reduce((acc, pos) => {
+    const outcome = pos.outcome;
+    if (!acc[outcome]) {
+      acc[outcome] = [];
+    }
+    acc[outcome].push(pos);
+    return acc;
+  }, {} as Record<string, ApiWhalePosition[]>);
+
+  // Get outcomes sorted: pick's side first, then others
+  const pickSide = signal.pick.side;
+  const outcomes = Object.keys(positionsByOutcome).sort((a, b) => {
+    if (a === pickSide) return -1;
+    if (b === pickSide) return 1;
+    return a.localeCompare(b);
+  });
+
+  // Calculate totals per side
+  function getSideTotals(positions: ApiWhalePosition[]) {
+    return {
+      count: positions.length,
+      volume: positions.reduce((sum, p) => sum + p.current_value, 0),
+    };
+  }
 
   async function handleCopy() {
     try {
@@ -220,38 +268,56 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
           {/* Whale Positions */}
           <section>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">WHALE POSITIONS</h4>
-            <div className="bg-muted rounded-lg p-4 space-y-2">
+            <div className="space-y-3">
               {isLoadingPositions ? (
-                <p className="text-sm text-muted-foreground">Loading whale positions...</p>
-              ) : whalePositions.length > 0 ? (
-                whalePositions.map((whale: ApiWhalePosition) => {
-                  const matchesPick = whale.outcome === signal.pick.side;
+                <div className="bg-muted rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">Loading whale positions...</p>
+                </div>
+              ) : outcomes.length > 0 ? (
+                outcomes.map((outcome) => {
+                  const positions = positionsByOutcome[outcome];
+                  const totals = getSideTotals(positions);
+                  const isPick = outcome === pickSide;
                   return (
-                    <div key={whale.id || whale.trader_wallet} className="flex justify-between text-sm gap-2">
-                      <span className="flex items-center gap-1 min-w-0">
-                        {whale.rank && whale.rank <= 10 ? '🐋' : '🦈'}{' '}
-                        <span className="truncate">
-                          {whale.username || `${whale.trader_wallet.slice(0, 8)}...`}
+                    <div
+                      key={outcome}
+                      className={`rounded-lg p-4 ${isPick ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`font-medium ${isPick ? 'text-green-500' : 'text-red-500'}`}>
+                          {isPick ? '✓' : '✗'} {outcome}
                         </span>
-                        {whale.rank && <span className="text-muted-foreground">#{whale.rank}</span>}
-                      </span>
-                      <span className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${matchesPick ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                          {matchesPick ? '✓' : '✗'} {whale.outcome}
+                        <span className="text-sm text-muted-foreground">
+                          {totals.count} traders · {formatCurrency(totals.volume)}
                         </span>
-                        <span className="font-mono">
-                          {formatCurrency(whale.current_value)} @ {formatPrice(whale.avg_price)}
-                        </span>
-                      </span>
+                      </div>
+                      <div className="space-y-1">
+                        {positions.map((whale: ApiWhalePosition) => (
+                          <div key={whale.id || whale.trader_wallet} className="flex justify-between text-sm">
+                            <span className="flex items-center gap-1 min-w-0">
+                              {whale.rank && whale.rank <= 10 ? '🐋' : '🦈'}{' '}
+                              <span className="truncate">
+                                {whale.username || `${whale.trader_wallet.slice(0, 8)}...`}
+                              </span>
+                              {whale.rank && <span className="text-muted-foreground">#{whale.rank}</span>}
+                            </span>
+                            <span className="font-mono flex-shrink-0">
+                              {formatCurrency(whale.current_value)} @ {formatPrice(whale.avg_price)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
                 })
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  {USE_MOCK_DATA
-                    ? 'Whale positions not available in mock mode'
-                    : 'No whale positions linked yet. Run sync script to populate.'}
-                </p>
+                <div className="bg-muted rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    {USE_MOCK_DATA
+                      ? 'Whale positions not available in mock mode'
+                      : 'No whale positions linked yet. Run sync script to populate.'}
+                  </p>
+                </div>
               )}
             </div>
           </section>
