@@ -90,7 +90,9 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
       <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {signal.matchup.away} @ {signal.matchup.home}
+            {signal.matchup.home
+              ? `${signal.matchup.away} vs. ${signal.matchup.home}`
+              : signal.matchup.away}
           </DialogTitle>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Badge className={`${sportColors[signal.sport]} text-white`}>

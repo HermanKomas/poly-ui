@@ -68,11 +68,28 @@ export function transformApiSignal(apiSignal: {
   last_seen_at: string;
   bet_type?: string | null;
 }): Signal {
-  // Parse event title to extract teams (e.g., "Lakers @ Warriors")
+  // Parse event title to extract teams (handles "Lakers @ Warriors" or "Lakers vs. Warriors")
   const eventTitle = apiSignal.event_title || '';
-  const teams = eventTitle.split(' @ ');
-  const away = teams[0] || 'Team A';
-  const home = teams[1] || 'Team B';
+  let away = 'Team A';
+  let home = 'Team B';
+
+  if (eventTitle.includes(' @ ')) {
+    const teams = eventTitle.split(' @ ');
+    away = teams[0] || 'Team A';
+    home = teams[1] || 'Team B';
+  } else if (eventTitle.includes(' vs. ')) {
+    const teams = eventTitle.split(' vs. ');
+    away = teams[0] || 'Team A';
+    home = teams[1] || 'Team B';
+  } else if (eventTitle.includes(' vs ')) {
+    const teams = eventTitle.split(' vs ');
+    away = teams[0] || 'Team A';
+    home = teams[1] || 'Team B';
+  } else {
+    // Can't parse, use full title as away team
+    away = eventTitle || 'Unknown';
+    home = '';
+  }
 
   // Use bet_type from API if available, otherwise infer from outcome/market_title
   let betType: BetType = 'Moneyline';
