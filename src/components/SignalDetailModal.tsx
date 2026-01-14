@@ -334,7 +334,7 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-[650px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {signal.marketTitle}
@@ -568,14 +568,16 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
 
                   {/* Notes section - collapsed view */}
                   {!notesExpanded && (
-                    <div className="flex items-center justify-between">
-                      {journalEntry.thesis ? (
-                        <p className="text-sm text-muted-foreground italic truncate flex-1 mr-2">
-                          "{journalEntry.thesis}"
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No notes</p>
-                      )}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        {journalEntry.thesis ? (
+                          <p className="text-sm text-muted-foreground italic truncate">
+                            "{journalEntry.thesis}"
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No notes</p>
+                        )}
+                      </div>
                       <div className="flex gap-2 flex-shrink-0">
                         <Button
                           variant="outline"
