@@ -147,3 +147,52 @@ export async function getSignalWhalePositions(signalId: number): Promise<{
 }> {
   return fetchApi(`/api/signals/${signalId}/positions`);
 }
+
+// Journal Types and Functions
+export interface ApiJournalEntry {
+  id: number;
+  signal_id: number;
+  outcome: string;
+  stake: number;
+  entry_price: number;
+  potential_payout: number | null;
+  status: 'open' | 'won' | 'lost' | 'sold';
+  actual_payout: number | null;
+  profit_loss: number | null;
+  thesis: string | null;  // Notes field
+  contradicts_signal: boolean;
+  trade_date: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getSignalJournal(signalId: number): Promise<ApiJournalEntry> {
+  return fetchApi(`/api/signals/${signalId}/journal`);
+}
+
+export async function createSignalJournal(
+  signalId: number,
+  notes?: string
+): Promise<ApiJournalEntry> {
+  return fetchApi(`/api/signals/${signalId}/journal`, {
+    method: 'POST',
+    body: JSON.stringify({ notes: notes || null }),
+  });
+}
+
+export async function updateSignalJournalNotes(
+  signalId: number,
+  notes: string
+): Promise<ApiJournalEntry> {
+  return fetchApi(`/api/signals/${signalId}/journal`, {
+    method: 'PATCH',
+    body: JSON.stringify({ notes }),
+  });
+}
+
+export async function refreshSignalJournal(signalId: number): Promise<ApiJournalEntry> {
+  return fetchApi(`/api/signals/${signalId}/journal/refresh`, {
+    method: 'POST',
+  });
+}

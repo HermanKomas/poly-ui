@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Copy, Check } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Copy, Check, BookOpen, RefreshCw, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { Signal, Sport } from '@/types/signal';
-import { getSignalWhalePositions, type ApiWhalePosition } from '@/lib/api';
+import {
+  getSignalWhalePositions,
+  getSignalJournal,
+  createSignalJournal,
+  updateSignalJournalNotes,
+  refreshSignalJournal,
+  type ApiWhalePosition,
+  type ApiJournalEntry,
+} from '@/lib/api';
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
@@ -152,6 +160,125 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
   }, [open, signal?.id, refetch]);
 
   const [copied, setCopied] = useState(false);
+
+  // Journal state
+  const [journalMode, setJournalMode] = useState<'hidden' | 'loading' | 'form' | 'display'>('hidden');
+  const [journalEntry, setJournalEntry] = useState<ApiJournalEntry | null>(null);
+  const [journalNotes, setJournalNotes] = useState('');
+  const [journalError, setJournalError] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // Check if journal entry exists when modal opens
+  const { data: existingJournal, isLoading: isCheckingJournal } = useQuery({
+    queryKey: ['journal', signal?.id],
+    queryFn: async () => {
+      if (!signal?.id || USE_MOCK_DATA) return null;
+      try {
+        return await getSignalJournal(signal.id);
+      } catch {
+        return null; // 404 means no entry exists
+      }
+    },
+    enabled: open && !!signal?.id && !USE_MOCK_DATA,
+    staleTime: 30 * 1000,
+  });
+
+  // Update state when existing journal loads
+  useEffect(() => {
+    if (existingJournal) {
+      setJournalEntry(existingJournal);
+      setJournalNotes(existingJournal.thesis || '');
+      setJournalMode('display');
+    } else if (!isCheckingJournal && open) {
+      setJournalMode('hidden');
+      setJournalEntry(null);
+      setJournalNotes('');
+    }
+  }, [existingJournal, isCheckingJournal, open]);
+
+  // Reset journal state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setJournalMode('hidden');
+      setJournalEntry(null);
+      setJournalNotes('');
+      setJournalError(null);
+    }
+  }, [open]);
+
+  // Create journal mutation
+  const createJournalMutation = useMutation({
+    mutationFn: async () => {
+      if (!signal?.id) throw new Error('No signal');
+      return createSignalJournal(signal.id, journalNotes || undefined);
+    },
+    onSuccess: (data) => {
+      setJournalEntry(data);
+      setJournalMode('display');
+      setJournalError(null);
+      queryClient.invalidateQueries({ queryKey: ['journal', signal?.id] });
+    },
+    onError: (error: Error) => {
+      setJournalError(error.message);
+      setJournalMode('form');
+    },
+  });
+
+  // Update notes mutation
+  const updateNotesMutation = useMutation({
+    mutationFn: async () => {
+      if (!signal?.id) throw new Error('No signal');
+      return updateSignalJournalNotes(signal.id, journalNotes);
+    },
+    onSuccess: (data) => {
+      setJournalEntry(data);
+      setJournalError(null);
+    },
+    onError: (error: Error) => {
+      setJournalError(error.message);
+    },
+  });
+
+  // Refresh mutation
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      if (!signal?.id) throw new Error('No signal');
+      return refreshSignalJournal(signal.id);
+    },
+    onSuccess: (data) => {
+      setJournalEntry(data);
+      setJournalNotes(data.thesis || '');
+      setJournalError(null);
+    },
+    onError: (error: Error) => {
+      setJournalError(error.message);
+    },
+  });
+
+  // Handle journal button click
+  function handleJournalClick() {
+    if (journalMode === 'hidden') {
+      setJournalMode('loading');
+      setJournalError(null);
+      createJournalMutation.mutate();
+    }
+  }
+
+  // Get status display info
+  function getStatusDisplay(status: string): { emoji: string; label: string; color: string } {
+    switch (status) {
+      case 'won':
+        return { emoji: '✅', label: 'Won', color: 'text-green-500' };
+      case 'lost':
+        return { emoji: '❌', label: 'Lost', color: 'text-red-500' };
+      case 'sold':
+        return { emoji: '💰', label: 'Sold', color: 'text-yellow-500' };
+      case 'open':
+      default:
+        return { emoji: '⏳', label: 'Open', color: 'text-blue-500' };
+    }
+  }
 
   if (!signal) return null;
 
@@ -335,6 +462,148 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
             </div>
           </section>
 
+          {/* Journal Section */}
+          {(journalMode !== 'hidden' || journalEntry) && (
+            <section>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">MY POSITION</h4>
+
+              {/* Loading state */}
+              {journalMode === 'loading' && (
+                <div className="bg-muted rounded-lg p-4 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Fetching your position from Polymarket...</span>
+                </div>
+              )}
+
+              {/* Error state with retry */}
+              {journalMode === 'form' && journalError && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 space-y-3">
+                  <p className="text-sm text-red-500">{journalError}</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setJournalError(null);
+                      setJournalMode('loading');
+                      createJournalMutation.mutate();
+                    }}
+                    disabled={createJournalMutation.isPending}
+                    className="w-full"
+                  >
+                    {createJournalMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Retrying...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Display state - show position details */}
+              {journalMode === 'display' && journalEntry && (
+                <div className="space-y-3">
+                  {/* Warning if contradicts signal */}
+                  {journalEntry.contradicts_signal && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-yellow-500">
+                        Your position ({journalEntry.outcome}) contradicts the signal's pick ({signal.pick.side})
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Position details card */}
+                  <div className={`rounded-lg p-4 ${
+                    journalEntry.contradicts_signal
+                      ? 'bg-yellow-500/10 border border-yellow-500/30'
+                      : 'bg-green-500/10 border border-green-500/30'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-medium">{journalEntry.outcome}</span>
+                      <span className={getStatusDisplay(journalEntry.status).color}>
+                        {getStatusDisplay(journalEntry.status).emoji} {getStatusDisplay(journalEntry.status).label}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Stake:</span>
+                        <span className="ml-2 font-mono">{formatCurrency(journalEntry.stake)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Entry:</span>
+                        <span className="ml-2 font-mono">{formatPrice(journalEntry.entry_price)}</span>
+                      </div>
+                      {journalEntry.status !== 'open' && journalEntry.profit_loss !== null && (
+                        <>
+                          <div>
+                            <span className="text-muted-foreground">Payout:</span>
+                            <span className="ml-2 font-mono">
+                              {journalEntry.actual_payout ? formatCurrency(journalEntry.actual_payout) : '-'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">P&L:</span>
+                            <span className={`ml-2 font-mono ${
+                              journalEntry.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'
+                            }`}>
+                              {journalEntry.profit_loss >= 0 ? '+' : ''}{formatCurrency(journalEntry.profit_loss)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Notes section */}
+                  <div className="bg-muted rounded-lg p-4 space-y-2">
+                    <label className="text-sm text-muted-foreground">Notes</label>
+                    <textarea
+                      className="w-full bg-background border rounded-md p-2 text-sm"
+                      placeholder="Add notes about your trade..."
+                      rows={2}
+                      value={journalNotes}
+                      onChange={(e) => setJournalNotes(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateNotesMutation.mutate()}
+                        disabled={updateNotesMutation.isPending || journalNotes === (journalEntry.thesis || '')}
+                      >
+                        {updateNotesMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        <span className="ml-1">Save Notes</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refreshMutation.mutate()}
+                        disabled={refreshMutation.isPending}
+                      >
+                        {refreshMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                        <span className="ml-1">Refresh</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* Action Buttons */}
           <div className="flex gap-2">
             <Button asChild className="flex-1">
@@ -342,6 +611,16 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
                 View on Polymarket ↗
               </a>
             </Button>
+            {journalMode === 'hidden' && !isCheckingJournal && !journalEntry && (
+              <Button
+                variant="outline"
+                onClick={handleJournalClick}
+                className="px-3"
+                title="Add to Journal"
+              >
+                <BookOpen className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="outline" onClick={handleCopy} className="px-3">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
