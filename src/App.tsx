@@ -13,7 +13,7 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false)
 
   // Fetch signals - pass sport filter to API for server-side filtering
-  const { data: signals = [], isLoading, dataUpdatedAt, refetch, isFetching } = useSignals(
+  const { data: signals = [], isLoading } = useSignals(
     sportFilter !== 'All' ? sportFilter : undefined
   )
 
@@ -53,10 +53,6 @@ function App() {
     setModalOpen(true)
   }
 
-  const handleRefresh = () => {
-    refetch()
-  }
-
   const handleForceRefresh = () => {
     refreshMutation.mutate(sportFilter !== 'All' ? sportFilter : undefined)
   }
@@ -83,9 +79,6 @@ function App() {
         onSportFilterChange={setSportFilter}
         sortOption={sortOption}
         onSortOptionChange={setSortOption}
-        lastUpdated={dataUpdatedAt ? new Date(dataUpdatedAt) : null}
-        onRefresh={handleRefresh}
-        isRefreshing={isFetching}
         meta={headerMeta}
         onForceRefresh={handleForceRefresh}
         isForceRefreshing={refreshMutation.isPending}

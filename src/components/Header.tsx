@@ -22,9 +22,6 @@ interface HeaderProps {
   onSportFilterChange: (sport: SportFilter) => void;
   sortOption: SortOption;
   onSortOptionChange: (sort: SortOption) => void;
-  lastUpdated: Date | null;
-  onRefresh: () => void;
-  isRefreshing: boolean;
   meta?: RefreshMeta;
   onForceRefresh?: () => void;
   isForceRefreshing?: boolean;
@@ -61,9 +58,6 @@ export function Header({
   onSportFilterChange,
   sortOption,
   onSortOptionChange,
-  lastUpdated,
-  onRefresh,
-  isRefreshing,
   meta,
   onForceRefresh,
   isForceRefreshing,
@@ -74,16 +68,6 @@ export function Header({
         {/* Title row */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Whale Tracer</h1>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={isRefreshing}
-            >
-              {isRefreshing ? 'Loading...' : 'Reload'}
-            </Button>
-          </div>
         </div>
 
         {/* Refresh status row */}
@@ -120,13 +104,6 @@ export function Header({
                 {isForceRefreshing ? 'Refreshing...' : 'Force Refresh'}
               </Button>
             )}
-          </div>
-        )}
-
-        {/* Last UI update (from TanStack Query) */}
-        {lastUpdated && (
-          <div className="text-xs text-muted-foreground sm:hidden">
-            UI updated: {lastUpdated.toLocaleTimeString()}
           </div>
         )}
 
