@@ -321,6 +321,22 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
     };
   }
 
+  // Calculate actual consensus from whale positions (if loaded)
+  const actualConsensus = (() => {
+    if (whalePositions.length === 0) return null;
+
+    const pickPositions = positionsByOutcome[pickSide] || [];
+    const pickVolume = pickPositions.reduce((sum, p) => sum + p.current_value, 0);
+    const totalVolume = whalePositions.reduce((sum, p) => sum + p.current_value, 0);
+
+    if (totalVolume === 0) return null;
+    return Math.round((pickVolume / totalVolume) * 100);
+  })();
+
+  // Use actual consensus if available, otherwise stored value
+  const displayConsensus = actualConsensus ?? signal.signal.consensusPercent;
+  const consensusChanged = actualConsensus !== null && actualConsensus !== signal.signal.consensusPercent;
+
   async function handleCopy() {
     try {
       // signal is guaranteed non-null here (checked above)
@@ -369,8 +385,15 @@ export function SignalDetailModal({ signal, open, onOpenChange }: SignalDetailMo
               <div className="flex items-center justify-between">
                 <span className="text-sm">Consensus</span>
                 <div className="flex items-center gap-2 flex-1 max-w-[200px] ml-4">
-                  <Progress value={signal.signal.consensusPercent} className="h-2" />
-                  <span className="font-mono text-sm w-10">{signal.signal.consensusPercent}%</span>
+                  <Progress value={displayConsensus} className="h-2" />
+                  <span className="font-mono text-sm w-10">
+                    {displayConsensus}%
+                    {consensusChanged && (
+                      <span className="text-muted-foreground text-xs ml-1" title={`Was ${signal.signal.consensusPercent}%`}>
+                        *
+                      </span>
+                    )}
+                  </span>
                 </div>
               </div>
               <div className="flex justify-between text-sm">

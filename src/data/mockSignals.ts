@@ -43,6 +43,7 @@ export const mockSignals: Signal[] = [
     polymarketUrl: 'https://polymarket.com/event/nba-lakers-warriors-total',
     firstSeenAt: new Date('2025-01-13T12:00:00Z'),
     lastSeenAt: new Date('2025-01-13T14:00:00Z'),
+    myPosition: { side: 'Over 224.5', stake: 250 },
   },
   {
     id: 2,
@@ -85,6 +86,7 @@ export const mockSignals: Signal[] = [
     polymarketUrl: 'https://polymarket.com/event/nhl-bruins-rangers-ml',
     firstSeenAt: new Date('2025-01-13T10:00:00Z'),
     lastSeenAt: new Date('2025-01-13T14:00:00Z'),
+    myPosition: null,
   },
   {
     id: 3,
@@ -129,6 +131,7 @@ export const mockSignals: Signal[] = [
     polymarketUrl: 'https://polymarket.com/event/nfl-chiefs-bills-spread',
     firstSeenAt: new Date('2025-01-13T08:00:00Z'),
     lastSeenAt: new Date('2025-01-13T14:00:00Z'),
+    myPosition: { side: 'Chiefs +3.5', stake: 1500 },
   },
   {
     id: 4,
@@ -170,6 +173,7 @@ export const mockSignals: Signal[] = [
     polymarketUrl: 'https://polymarket.com/event/cbb-duke-unc-total',
     firstSeenAt: new Date('2025-01-13T11:00:00Z'),
     lastSeenAt: new Date('2025-01-13T14:00:00Z'),
+    myPosition: null,
   },
   {
     id: 5,
@@ -212,6 +216,7 @@ export const mockSignals: Signal[] = [
     polymarketUrl: 'https://polymarket.com/event/cfb-osu-michigan-spread',
     firstSeenAt: new Date('2025-01-13T09:00:00Z'),
     lastSeenAt: new Date('2025-01-13T14:00:00Z'),
+    myPosition: null,
   },
   {
     id: 6,
@@ -255,5 +260,6 @@ export const mockSignals: Signal[] = [
     polymarketUrl: 'https://polymarket.com/event/nba-celtics-heat-spread',
     firstSeenAt: new Date('2025-01-13T07:00:00Z'),
     lastSeenAt: new Date('2025-01-13T14:00:00Z'),
+    myPosition: null,
   },
 ];

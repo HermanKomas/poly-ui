@@ -44,6 +44,9 @@ export interface ApiSignal {
   last_seen_at: string;
   alert_sent_at: string | null;
   resolved_at: string | null;
+  // User position from journal (if exists)
+  my_position: string | null;
+  my_stake: number | null;
 }
 
 export interface ApiTrader {

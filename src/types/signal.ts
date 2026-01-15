@@ -44,6 +44,11 @@ export interface Signal {
   polymarketUrl: string;
   firstSeenAt: Date;
   lastSeenAt: Date;
+  // User's position from journal (if exists)
+  myPosition: {
+    side: string;
+    stake: number;
+  } | null;
 }
 
 export type SortOption = 'created' | 'gameTime';
@@ -68,6 +73,8 @@ export function transformApiSignal(apiSignal: {
   first_seen_at: string;
   last_seen_at: string;
   bet_type?: string | null;
+  my_position?: string | null;
+  my_stake?: number | null;
 }): Signal {
   // Parse event title to extract teams (handles "Lakers @ Warriors" or "Lakers vs. Warriors")
   const eventTitle = apiSignal.event_title || '';
@@ -164,5 +171,8 @@ export function transformApiSignal(apiSignal: {
     polymarketUrl: apiSignal.polymarket_url,
     firstSeenAt: new Date(apiSignal.first_seen_at),
     lastSeenAt: new Date(apiSignal.last_seen_at),
+    myPosition: apiSignal.my_position && apiSignal.my_stake != null
+      ? { side: apiSignal.my_position, stake: apiSignal.my_stake }
+      : null,
   };
 }
