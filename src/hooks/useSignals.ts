@@ -6,9 +6,9 @@ import { mockSignals } from '@/data/mockSignals';
 // Set to true to use mock data (for development without API)
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
-export function useSignals(sport?: string) {
+export function useSignals(sport?: string, dateFilter?: string) {
   return useQuery({
-    queryKey: ['signals', sport],
+    queryKey: ['signals', sport, dateFilter],
     queryFn: async (): Promise<Signal[]> => {
       if (USE_MOCK_DATA) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -17,7 +17,7 @@ export function useSignals(sport?: string) {
 
       const response = await getSignals({
         sport: sport && sport !== 'All' ? sport : undefined,
-        hours: 72,
+        date_filter: dateFilter || 'this_week',
       });
 
       return response.signals.map(transformApiSignal);

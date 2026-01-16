@@ -96,12 +96,14 @@ export async function getSignals(params?: {
   sport?: string;
   tier?: number;
   hours?: number;
+  date_filter?: string;
   include_resolved?: boolean;
 }): Promise<{ signals: ApiSignal[]; count: number }> {
   const searchParams = new URLSearchParams();
   if (params?.sport) searchParams.set('sport', params.sport);
   if (params?.tier) searchParams.set('tier', String(params.tier));
   if (params?.hours) searchParams.set('hours', String(params.hours));
+  if (params?.date_filter) searchParams.set('date_filter', params.date_filter);
   if (params?.include_resolved) searchParams.set('include_resolved', 'true');
 
   const query = searchParams.toString();

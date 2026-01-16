@@ -14,14 +14,18 @@ import type { Signal, SportFilter, SortOption, Sport } from '@/types/signal';
 
 const sports: Sport[] = ['NBA', 'NHL', 'NFL', 'CBB', 'CFB'];
 
+type DateFilter = 'today' | 'yesterday' | 'this_week' | 'all';
+
 export function SignalsPage() {
   const [sportFilter, setSportFilter] = useState<SportFilter>('All');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('this_week');
   const [sortOption, setSortOption] = useState<SortOption>('created');
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const { data: signals = [], isLoading } = useSignals(
-    sportFilter !== 'All' ? sportFilter : undefined
+    sportFilter !== 'All' ? sportFilter : undefined,
+    dateFilter
   );
 
   const filteredAndSortedSignals = useMemo(() => {
@@ -82,7 +86,19 @@ export function SignalsPage() {
           ))}
         </div>
 
-        <div className="ml-auto">
+        <div className="flex items-center gap-2 ml-auto">
+          <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
+              <SelectItem value="this_week">This Week</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Sort by" />
