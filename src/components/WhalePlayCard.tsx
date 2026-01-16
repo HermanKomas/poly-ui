@@ -60,11 +60,11 @@ function formatGameTime(dateStr: string | null): string {
 export function WhalePlayCard({ play, onClick }: WhalePlayCardProps) {
   const sport = play.sport as Sport | null;
   const dominantOutcome = play.outcomes[0]; // Already sorted by volume
-  const isResolved = play.status === 'resolved';
+  const isEnded = play.status === 'ended';
 
   return (
     <Card
-      className={`cursor-pointer transition-shadow hover:shadow-lg ${isResolved ? 'opacity-60' : ''}`}
+      className={`cursor-pointer transition-shadow hover:shadow-lg ${isEnded ? 'opacity-60' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-3">
@@ -120,9 +120,9 @@ export function WhalePlayCard({ play, onClick }: WhalePlayCardProps) {
         {dominantOutcome && (
           <div className="flex items-center justify-between text-xs mt-1 text-muted-foreground">
             <span>Avg Entry: {(dominantOutcome.avg_entry * 100).toFixed(0)}¢</span>
-            {isResolved && (
+            {isEnded && (
               <Badge variant="secondary" className="text-xs">
-                Resolved
+                Ended
               </Badge>
             )}
           </div>

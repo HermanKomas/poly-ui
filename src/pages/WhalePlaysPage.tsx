@@ -17,7 +17,7 @@ import type { ApiWhalePlay } from '@/lib/api';
 type Sport = 'NBA' | 'NHL' | 'NFL' | 'CBB' | 'CFB';
 type SportFilter = Sport | 'All';
 type BetTypeFilter = 'All' | 'Totals' | 'Spread' | 'Moneyline';
-type StatusFilter = 'All' | 'open' | 'resolved';
+type StatusFilter = 'All' | 'open' | 'ended';
 
 const sports: Sport[] = ['NBA', 'NHL', 'NFL', 'CBB', 'CFB'];
 const betTypes: BetTypeFilter[] = ['All', 'Totals', 'Spread', 'Moneyline'];
@@ -150,7 +150,7 @@ export function WhalePlaysPage() {
           <SelectContent>
             <SelectItem value="All">All Status</SelectItem>
             <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectItem value="ended">Ended</SelectItem>
           </SelectContent>
         </Select>
       </div>
