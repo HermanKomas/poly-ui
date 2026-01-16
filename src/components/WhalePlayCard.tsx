@@ -32,16 +32,24 @@ function formatGameTime(dateStr: string | null): string {
   const diffMs = date.getTime() - now.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
 
-  if (diffHours < -24) {
-    return 'Ended';
+  // Show relative time or date based on how far away the game is
+  if (diffHours < -2) {
+    // Game ended more than 2 hours ago - show date
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
   } else if (diffHours < 0) {
+    // Game in progress (started within last 2 hours)
     return 'Live';
   } else if (diffHours < 24) {
+    // Game within 24 hours - show time
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
     }).format(date);
   } else {
+    // Game more than 24 hours away - show date
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
@@ -52,11 +60,11 @@ function formatGameTime(dateStr: string | null): string {
 export function WhalePlayCard({ play, onClick }: WhalePlayCardProps) {
   const sport = play.sport as Sport | null;
   const dominantOutcome = play.outcomes[0]; // Already sorted by volume
-  const isOpen = play.status === 'open';
+  const isResolved = play.status === 'resolved';
 
   return (
     <Card
-      className={`cursor-pointer transition-shadow hover:shadow-lg ${!isOpen ? 'opacity-60' : ''}`}
+      className={`cursor-pointer transition-shadow hover:shadow-lg ${isResolved ? 'opacity-60' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-3">
@@ -112,9 +120,9 @@ export function WhalePlayCard({ play, onClick }: WhalePlayCardProps) {
         {dominantOutcome && (
           <div className="flex items-center justify-between text-xs mt-1 text-muted-foreground">
             <span>Avg Entry: {(dominantOutcome.avg_entry * 100).toFixed(0)}¢</span>
-            {!isOpen && (
+            {isResolved && (
               <Badge variant="secondary" className="text-xs">
-                Closed
+                Resolved
               </Badge>
             )}
           </div>
