@@ -263,8 +263,38 @@ export function SignalDetailSheet({ signal, open, onOpenChange }: SignalDetailSh
         `- Signal Score: ${signal!.signal.signalScore.toFixed(2)}${signal!.signal.tier ? ` (Tier ${signal!.signal.tier})` : ''}`,
         `- R/R Ratio: ${signal!.signal.rrRatio.toFixed(2)}:1`,
         '',
-        `[View on Polymarket](${signal!.polymarketUrl})`,
       ];
+
+      // Add whale positions if available
+      if (outcomes.length > 0) {
+        lines.push('## Whale Positions');
+        for (const outcome of outcomes) {
+          const positions = positionsByOutcome[outcome];
+          const totals = getSideTotals(positions);
+          const isPick = outcome === pickSide;
+          lines.push(`### ${isPick ? '→ ' : ''}${outcome}`);
+          lines.push(`${totals.count} traders · ${formatCurrency(totals.volume)}`);
+          for (const whale of positions) {
+            const name = whale.username || `${whale.trader_wallet.slice(0, 10)}...`;
+            const rank = whale.rank ? ` #${whale.rank}` : '';
+            lines.push(`- ${name}${rank}: ${formatCurrency(whale.current_value)} @ ${formatPrice(whale.avg_price)}`);
+          }
+          lines.push('');
+        }
+      }
+
+      // Add checklist
+      lines.push('## Checklist');
+      lines.push(`${signal!.checklist.consensusPass ? '✅' : '❌'} Consensus ≥80%`);
+      lines.push(`${signal!.checklist.traderCountPass ? '✅' : '❌'} Traders ≥3`);
+      lines.push(`${signal!.checklist.priceCeilingPass ? '✅' : '❌'} Price ≤55¢`);
+      lines.push(`${signal!.checklist.rrRatioPass ? '✅' : '❌'} R/R ≥1.0:1`);
+      lines.push(`${signal!.checklist.noHedging ? '✅' : '❌'} No hedging`);
+      lines.push(`${signal!.checklist.noEliteConflict ? '✅' : '❌'} No elite conflicts`);
+      lines.push('');
+
+      lines.push(`[View on Polymarket](${signal!.polymarketUrl})`);
+
       await navigator.clipboard.writeText(lines.join('\n'));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
