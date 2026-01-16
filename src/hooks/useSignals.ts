@@ -75,11 +75,14 @@ export function useWhalePlays(params?: {
   sport?: string;
   bet_type?: string;
   status?: string;
+  game_date?: string;
+  min_volume?: number;
+  min_whales?: number;
   page?: number;
   page_size?: number;
 }) {
   return useQuery<ApiWhalePlaysResponse>({
-    queryKey: ['whale-plays', params?.sport, params?.bet_type, params?.status, params?.page, params?.page_size],
+    queryKey: ['whale-plays', params?.sport, params?.bet_type, params?.status, params?.game_date, params?.min_volume, params?.min_whales, params?.page, params?.page_size],
     queryFn: async () => {
       if (USE_MOCK_DATA) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -96,6 +99,9 @@ export function useWhalePlays(params?: {
         sport: params?.sport && params.sport !== 'All' ? params.sport : undefined,
         bet_type: params?.bet_type && params.bet_type !== 'All' ? params.bet_type : undefined,
         status: params?.status && params.status !== 'All' ? params.status : undefined,
+        game_date: params?.game_date || undefined,
+        min_volume: params?.min_volume || undefined,
+        min_whales: params?.min_whales || undefined,
         page: params?.page,
         page_size: params?.page_size ?? 25,
       });

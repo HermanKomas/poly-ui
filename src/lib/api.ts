@@ -249,6 +249,9 @@ export async function getWhalePlays(params?: {
   sport?: string;
   bet_type?: string;
   status?: string;
+  game_date?: string;
+  min_volume?: number;
+  min_whales?: number;
   page?: number;
   page_size?: number;
 }): Promise<ApiWhalePlaysResponse> {
@@ -256,6 +259,9 @@ export async function getWhalePlays(params?: {
   if (params?.sport) searchParams.set('sport', params.sport);
   if (params?.bet_type) searchParams.set('bet_type', params.bet_type);
   if (params?.status) searchParams.set('status', params.status);
+  if (params?.game_date) searchParams.set('game_date', params.game_date);
+  if (params?.min_volume) searchParams.set('min_volume', String(params.min_volume));
+  if (params?.min_whales) searchParams.set('min_whales', String(params.min_whales));
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.page_size) searchParams.set('page_size', String(params.page_size));
 

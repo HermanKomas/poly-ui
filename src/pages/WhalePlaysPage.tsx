@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,9 @@ export function WhalePlaysPage() {
   const [sportFilter, setSportFilter] = useState<SportFilter>('All');
   const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [gameDate, setGameDate] = useState<string>('');
+  const [minVolume, setMinVolume] = useState<string>('');
+  const [minWhales, setMinWhales] = useState<string>('');
   const [page, setPage] = useState(1);
   const [selectedPlay, setSelectedPlay] = useState<ApiWhalePlay | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -34,6 +37,9 @@ export function WhalePlaysPage() {
     sport: sportFilter !== 'All' ? sportFilter : undefined,
     bet_type: betTypeFilter !== 'All' ? betTypeFilter : undefined,
     status: statusFilter !== 'All' ? statusFilter : undefined,
+    game_date: gameDate || undefined,
+    min_volume: minVolume ? parseFloat(minVolume) : undefined,
+    min_whales: minWhales ? parseInt(minWhales, 10) : undefined,
     page,
     page_size: 25,
   });
@@ -153,6 +159,67 @@ export function WhalePlaysPage() {
             <SelectItem value="ended">Ended</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Game date filter */}
+        <div className="relative">
+          <input
+            type="date"
+            value={gameDate}
+            onChange={(e) => handleFilterChange(setGameDate, e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Game Date"
+          />
+          {gameDate && (
+            <button
+              onClick={() => handleFilterChange(setGameDate, '')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Min volume filter */}
+        <div className="relative">
+          <input
+            type="number"
+            value={minVolume}
+            onChange={(e) => handleFilterChange(setMinVolume, e.target.value)}
+            className="h-9 w-[120px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Min Volume"
+            min="0"
+            step="100"
+          />
+          {minVolume && (
+            <button
+              onClick={() => handleFilterChange(setMinVolume, '')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Min whales filter */}
+        <div className="relative">
+          <input
+            type="number"
+            value={minWhales}
+            onChange={(e) => handleFilterChange(setMinWhales, e.target.value)}
+            className="h-9 w-[110px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Min Whales"
+            min="1"
+            step="1"
+          />
+          {minWhales && (
+            <button
+              onClick={() => handleFilterChange(setMinWhales, '')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Grid */}
