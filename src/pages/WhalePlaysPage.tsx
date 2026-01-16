@@ -33,6 +33,7 @@ export function WhalePlaysPage() {
   // Applied values (sent to API on Enter)
   const [minVolume, setMinVolume] = useState<string>('');
   const [minWhales, setMinWhales] = useState<string>('');
+  const [allOneSide, setAllOneSide] = useState<boolean>(false);
   const [page, setPage] = useState(1);
   const [selectedPlay, setSelectedPlay] = useState<ApiWhalePlay | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -44,6 +45,7 @@ export function WhalePlaysPage() {
     game_date: gameDate || undefined,
     min_volume: minVolume ? parseFloat(minVolume) : undefined,
     min_whales: minWhales ? parseInt(minWhales, 10) : undefined,
+    all_one_side: allOneSide || undefined,
     page,
     page_size: 25,
   });
@@ -250,6 +252,17 @@ export function WhalePlaysPage() {
             </button>
           )}
         </div>
+
+        {/* All One Side toggle */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={allOneSide}
+            onChange={(e) => handleFilterChange(setAllOneSide, e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <span className="text-sm whitespace-nowrap">All One Side</span>
+        </label>
       </div>
 
       {/* Grid */}

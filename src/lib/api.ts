@@ -252,6 +252,7 @@ export async function getWhalePlays(params?: {
   game_date?: string;
   min_volume?: number;
   min_whales?: number;
+  all_one_side?: boolean;
   page?: number;
   page_size?: number;
 }): Promise<ApiWhalePlaysResponse> {
@@ -262,6 +263,7 @@ export async function getWhalePlays(params?: {
   if (params?.game_date) searchParams.set('game_date', params.game_date);
   if (params?.min_volume) searchParams.set('min_volume', String(params.min_volume));
   if (params?.min_whales) searchParams.set('min_whales', String(params.min_whales));
+  if (params?.all_one_side) searchParams.set('all_one_side', 'true');
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.page_size) searchParams.set('page_size', String(params.page_size));
 
