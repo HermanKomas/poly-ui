@@ -94,6 +94,7 @@ export interface ApiWhalePosition {
 // API Functions
 export async function getSignals(params?: {
   sport?: string;
+  bet_type?: string;
   tier?: number;
   hours?: number;
   date_filter?: string;
@@ -101,6 +102,7 @@ export async function getSignals(params?: {
 }): Promise<{ signals: ApiSignal[]; count: number }> {
   const searchParams = new URLSearchParams();
   if (params?.sport) searchParams.set('sport', params.sport);
+  if (params?.bet_type) searchParams.set('bet_type', params.bet_type);
   if (params?.tier) searchParams.set('tier', String(params.tier));
   if (params?.hours) searchParams.set('hours', String(params.hours));
   if (params?.date_filter) searchParams.set('date_filter', params.date_filter);

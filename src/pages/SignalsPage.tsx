@@ -13,11 +13,14 @@ import { useSignals } from '@/hooks/useSignals';
 import type { Signal, SportFilter, SortOption, Sport } from '@/types/signal';
 
 const sports: Sport[] = ['NBA', 'NHL', 'NFL', 'CBB', 'CFB'];
+const betTypes = ['All', 'Totals', 'Spread', 'Moneyline'] as const;
+type BetTypeFilter = (typeof betTypes)[number];
 
 type DateFilter = 'today' | 'yesterday' | 'this_week' | 'all';
 
 export function SignalsPage() {
   const [sportFilter, setSportFilter] = useState<SportFilter>('All');
+  const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
   const [dateFilter, setDateFilter] = useState<DateFilter>('this_week');
   const [sortOption, setSortOption] = useState<SortOption>('created');
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
@@ -25,7 +28,8 @@ export function SignalsPage() {
 
   const { data: signals = [], isLoading } = useSignals(
     sportFilter !== 'All' ? sportFilter : undefined,
-    dateFilter
+    dateFilter,
+    betTypeFilter !== 'All' ? betTypeFilter : undefined
   );
 
   const filteredAndSortedSignals = useMemo(() => {
@@ -87,6 +91,19 @@ export function SignalsPage() {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
+          <Select value={betTypeFilter} onValueChange={(v) => setBetTypeFilter(v as BetTypeFilter)}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Bet Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {betTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Time" />
