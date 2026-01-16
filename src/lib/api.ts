@@ -199,3 +199,62 @@ export async function refreshSignalJournal(signalId: number): Promise<ApiJournal
     method: 'POST',
   });
 }
+
+// Whale Plays Types and Functions
+export interface ApiWhalePlayPosition {
+  trader_wallet: string;
+  username: string | null;
+  rank: number | null;
+  size: number;
+  avg_price: number;
+  current_value: number;
+}
+
+export interface ApiWhalePlayOutcome {
+  outcome: string;
+  whale_count: number;
+  total_volume: number;
+  avg_entry: number;
+  positions: ApiWhalePlayPosition[];
+}
+
+export interface ApiWhalePlay {
+  condition_id: string;
+  market_slug: string | null;
+  event_title: string | null;
+  market_title: string | null;
+  sport: string | null;
+  bet_type: string | null;
+  event_date: string | null;
+  polymarket_url: string | null;
+  status: string;
+  outcomes: ApiWhalePlayOutcome[];
+  total_whale_count: number;
+  total_volume: number;
+}
+
+export interface ApiWhalePlaysResponse {
+  plays: ApiWhalePlay[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export async function getWhalePlays(params?: {
+  sport?: string;
+  bet_type?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<ApiWhalePlaysResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.sport) searchParams.set('sport', params.sport);
+  if (params?.bet_type) searchParams.set('bet_type', params.bet_type);
+  if (params?.status) searchParams.set('status', params.status);
+  if (params?.page) searchParams.set('page', String(params.page));
+  if (params?.page_size) searchParams.set('page_size', String(params.page_size));
+
+  const query = searchParams.toString();
+  return fetchApi(`/api/whale-plays${query ? `?${query}` : ''}`);
+}
