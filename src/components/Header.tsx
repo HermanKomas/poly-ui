@@ -14,7 +14,7 @@ export function Header() {
           {/* Logo/Title */}
           <Link to="/" className="flex items-center gap-2">
             <span className="text-xl">🐋</span>
-            <span className="font-semibold text-lg">whaletrace.io</span>
+            <span className="font-semibold text-lg">whaletracer.io</span>
           </Link>
 
           {/* Navigation */}
