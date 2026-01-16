@@ -27,6 +27,10 @@ export function WhalePlaysPage() {
   const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [gameDate, setGameDate] = useState<string>('');
+  // Input values (local state for typing)
+  const [minVolumeInput, setMinVolumeInput] = useState<string>('');
+  const [minWhalesInput, setMinWhalesInput] = useState<string>('');
+  // Applied values (sent to API on Enter)
   const [minVolume, setMinVolume] = useState<string>('');
   const [minWhales, setMinWhales] = useState<string>('');
   const [page, setPage] = useState(1);
@@ -183,16 +187,29 @@ export function WhalePlaysPage() {
         <div className="relative">
           <input
             type="number"
-            value={minVolume}
-            onChange={(e) => handleFilterChange(setMinVolume, e.target.value)}
+            value={minVolumeInput}
+            onChange={(e) => setMinVolumeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleFilterChange(setMinVolume, minVolumeInput);
+              }
+            }}
+            onBlur={() => {
+              if (minVolumeInput !== minVolume) {
+                handleFilterChange(setMinVolume, minVolumeInput);
+              }
+            }}
             className="h-9 w-[120px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
             placeholder="Min Volume"
             min="0"
             step="100"
           />
-          {minVolume && (
+          {minVolumeInput && (
             <button
-              onClick={() => handleFilterChange(setMinVolume, '')}
+              onClick={() => {
+                setMinVolumeInput('');
+                handleFilterChange(setMinVolume, '');
+              }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -204,16 +221,29 @@ export function WhalePlaysPage() {
         <div className="relative">
           <input
             type="number"
-            value={minWhales}
-            onChange={(e) => handleFilterChange(setMinWhales, e.target.value)}
+            value={minWhalesInput}
+            onChange={(e) => setMinWhalesInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleFilterChange(setMinWhales, minWhalesInput);
+              }
+            }}
+            onBlur={() => {
+              if (minWhalesInput !== minWhales) {
+                handleFilterChange(setMinWhales, minWhalesInput);
+              }
+            }}
             className="h-9 w-[110px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
             placeholder="Min Whales"
             min="1"
             step="1"
           />
-          {minWhales && (
+          {minWhalesInput && (
             <button
-              onClick={() => handleFilterChange(setMinWhales, '')}
+              onClick={() => {
+                setMinWhalesInput('');
+                handleFilterChange(setMinWhales, '');
+              }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
