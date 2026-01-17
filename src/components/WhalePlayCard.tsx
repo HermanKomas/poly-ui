@@ -24,7 +24,35 @@ function formatVolume(amount: number): string {
   return `$${amount.toFixed(0)}`;
 }
 
-function formatGameTime(dateStr: string | null): string {
+type GameStatus = 'future' | 'in_progress' | 'ended';
+
+function getGameStatus(dateStr: string | null, apiStatus: string): GameStatus {
+  // Use API status if it says ended
+  if (apiStatus === 'ended') return 'ended';
+
+  if (!dateStr) return 'future';
+
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  // Game started more than 4 hours ago = ended
+  if (diffHours < -4) {
+    return 'ended';
+  }
+  // Game started within last 4 hours = in progress
+  if (diffHours < 0) {
+    return 'in_progress';
+  }
+  // Game is in the future
+  return 'future';
+}
+
+function formatGameTime(dateStr: string | null, status: GameStatus): string {
+  if (status === 'ended') return 'Ended';
+  if (status === 'in_progress') return 'In Progress';
+
   if (!dateStr) return 'TBD';
 
   const date = new Date(dateStr);
@@ -32,27 +60,19 @@ function formatGameTime(dateStr: string | null): string {
   const diffMs = date.getTime() - now.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
 
-  // Show relative time or date based on how far away the game is
-  if (diffHours < -2) {
-    // Game ended more than 2 hours ago - show date
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
-  } else if (diffHours < 0) {
-    // Game in progress (started within last 2 hours)
-    return 'Live';
-  } else if (diffHours < 24) {
+  if (diffHours < 24) {
     // Game within 24 hours - show time
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
     }).format(date);
   } else {
-    // Game more than 24 hours away - show date
+    // Game more than 24 hours away - show date and time
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     }).format(date);
   }
 }
@@ -60,7 +80,9 @@ function formatGameTime(dateStr: string | null): string {
 export function WhalePlayCard({ play, onClick }: WhalePlayCardProps) {
   const sport = play.sport as Sport | null;
   const dominantOutcome = play.outcomes[0]; // Already sorted by volume
-  const isEnded = play.status === 'ended';
+  const gameStatus = getGameStatus(play.event_date, play.status);
+  const isEnded = gameStatus === 'ended';
+  const isInProgress = gameStatus === 'in_progress';
 
   return (
     <Card
@@ -111,20 +133,21 @@ export function WhalePlayCard({ play, onClick }: WhalePlayCardProps) {
             {formatVolume(play.total_volume)}
             <span className="text-muted-foreground ml-1">total volume</span>
           </span>
-          <span className="text-muted-foreground">
-            {formatGameTime(play.event_date)}
+          <span className={`flex items-center gap-1.5 ${isInProgress ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+            {isInProgress && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+            )}
+            {formatGameTime(play.event_date, gameStatus)}
           </span>
         </div>
 
         {/* Avg entry if available */}
         {dominantOutcome && (
-          <div className="flex items-center justify-between text-xs mt-1 text-muted-foreground">
+          <div className="text-xs mt-1 text-muted-foreground">
             <span>Avg Entry: {(dominantOutcome.avg_entry * 100).toFixed(0)}¢</span>
-            {isEnded && (
-              <Badge variant="secondary" className="text-xs">
-                Ended
-              </Badge>
-            )}
           </div>
         )}
       </CardContent>
