@@ -1,3 +1,5 @@
+import { getAccessToken } from './auth';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
@@ -6,9 +8,16 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(API_KEY && { 'X-API-Key': API_KEY }),
     ...options.headers,
   };
+
+  // Prefer Bearer token auth, fall back to API key
+  const accessToken = getAccessToken();
+  if (accessToken) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${accessToken}`;
+  } else if (API_KEY) {
+    (headers as Record<string, string>)['X-API-Key'] = API_KEY;
+  }
 
   const response = await fetch(url, {
     ...options,
