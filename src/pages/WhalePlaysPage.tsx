@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { WhalePlayCard } from '@/components/WhalePlayCard';
 import { WhalePlaySheet } from '@/components/WhalePlaySheet';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useWhalePlays } from '@/hooks/useSignals';
 import type { ApiWhalePlay } from '@/lib/api';
 
@@ -25,7 +26,7 @@ const betTypes: BetTypeFilter[] = ['All', 'Totals', 'Spread', 'Moneyline'];
 export function WhalePlaysPage() {
   const [sportFilter, setSportFilter] = useState<SportFilter>('All');
   const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open'); // Default to Open
   const [gameDate, setGameDate] = useState<string>('');
   // Input values (local state for typing)
   const [minVolumeInput, setMinVolumeInput] = useState<string>('');
@@ -66,22 +67,6 @@ export function WhalePlaysPage() {
     setPage(1);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <p className="text-muted-foreground">Loading whale plays...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <p className="text-red-500">Error loading whale plays</p>
-      </div>
-    );
-  }
-
   const plays = data?.plays || [];
   const totalPages = data?.total_pages || 1;
   const total = data?.total || 0;
@@ -90,28 +75,38 @@ export function WhalePlaysPage() {
     <div className="p-4">
       {/* Page header */}
       <div className="mb-4">
-        <h2 className="text-lg font-semibold">Whale Plays</h2>
+        <h2 className="text-lg font-semibold">Whale Bets</h2>
         <p className="text-sm text-muted-foreground">
           Track where smart money is moving
         </p>
       </div>
 
-      {/* Stats row */}
+      {/* Stats row - show placeholder when loading */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-        <span>Active Positions: <strong className="text-foreground">{total}</strong></span>
-        <span>
-          Total Whales: <strong className="text-foreground">
-            {plays.reduce((sum, p) => sum + p.total_whale_count, 0)}
-          </strong>
-        </span>
-        <span>
-          Total Volume: <strong className="text-foreground">
-            ${plays.reduce((sum, p) => sum + p.total_volume, 0).toLocaleString()}
-          </strong>
-        </span>
+        {isLoading ? (
+          <>
+            <span>Active Positions: <span className="inline-block w-8 h-4 bg-muted animate-pulse rounded" /></span>
+            <span>Total Whales: <span className="inline-block w-8 h-4 bg-muted animate-pulse rounded" /></span>
+            <span>Total Volume: <span className="inline-block w-16 h-4 bg-muted animate-pulse rounded" /></span>
+          </>
+        ) : (
+          <>
+            <span>Active Positions: <strong className="text-foreground">{total}</strong></span>
+            <span>
+              Total Whales: <strong className="text-foreground">
+                {plays.reduce((sum, p) => sum + p.total_whale_count, 0)}
+              </strong>
+            </span>
+            <span>
+              Total Volume: <strong className="text-foreground">
+                ${plays.reduce((sum, p) => sum + p.total_volume, 0).toLocaleString()}
+              </strong>
+            </span>
+          </>
+        )}
       </div>
 
-      {/* Filters row */}
+      {/* Filters row - always visible */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Sport filter chips */}
         <div className="flex flex-wrap gap-1">
@@ -265,10 +260,16 @@ export function WhalePlaysPage() {
         </label>
       </div>
 
-      {/* Grid */}
-      {plays.length === 0 ? (
+      {/* Grid with loading state */}
+      {error ? (
+        <div className="flex items-center justify-center p-12">
+          <p className="text-red-500">Error loading whale bets</p>
+        </div>
+      ) : isLoading ? (
+        <LoadingSpinner message="Finding whale bets..." />
+      ) : plays.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground">
-          No whale plays found for these filters.
+          No whale bets found for these filters.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -282,8 +283,8 @@ export function WhalePlaysPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination - only show when not loading and has pages */}
+      {!isLoading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <Button
             variant="outline"

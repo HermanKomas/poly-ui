@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import { SignalGrid } from '@/components/SignalGrid';
 import { SignalDetailSheet } from '@/components/SignalDetailSheet';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useSignals } from '@/hooks/useSignals';
 import type { Signal, SportFilter, SortOption, Sport } from '@/types/signal';
 
@@ -58,17 +59,9 @@ export function SignalsPage() {
     setModalOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <p className="text-muted-foreground">Loading signals...</p>
-      </div>
-    );
-  }
-
   return (
     <div>
-      {/* Filters row */}
+      {/* Filters row - always visible */}
       <div className="flex flex-wrap items-center gap-2 p-4 border-b">
         <div className="flex flex-wrap gap-1">
           <Badge
@@ -128,8 +121,10 @@ export function SignalsPage() {
         </div>
       </div>
 
-      {/* Grid */}
-      {filteredAndSortedSignals.length === 0 ? (
+      {/* Grid with loading state */}
+      {isLoading ? (
+        <LoadingSpinner message="Loading signals..." />
+      ) : filteredAndSortedSignals.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground">
           No signals match your filters.
         </div>

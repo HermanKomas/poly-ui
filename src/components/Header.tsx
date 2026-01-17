@@ -10,8 +10,8 @@ export function Header() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, isLoading } = useAuth();
 
-  const isSignals = location.pathname === '/';
-  const isWhalePlays = location.pathname === '/whale-plays';
+  const isWhaleBets = location.pathname === '/' || location.pathname === '/whale-bets';
+  const isSignals = location.pathname === '/signals';
 
   const handleLogout = async () => {
     await logout();
@@ -34,30 +34,35 @@ export function Header() {
 
             {/* Navigation */}
             <nav className="flex items-center gap-1">
+              {/* Whale Bets - first tab, always visible */}
               <Link
                 to="/"
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                  isSignals
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                )}
-              >
-                <Radio className="w-4 h-4" />
-                Signals
-              </Link>
-              <Link
-                to="/whale-plays"
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                  isWhalePlays
+                  isWhaleBets
                     ? 'bg-muted text-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 )}
               >
                 <Fish className="w-4 h-4" />
-                Whale Plays
+                Whale Bets
               </Link>
+
+              {/* Signals - only visible when authenticated */}
+              {isAuthenticated && (
+                <Link
+                  to="/signals"
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                    isSignals
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  )}
+                >
+                  <Radio className="w-4 h-4" />
+                  Signals
+                </Link>
+              )}
             </nav>
           </div>
 
