@@ -126,8 +126,8 @@ export function transformApiSignal(apiSignal: {
     }
   }
 
-  const entryPrice = apiSignal.avg_entry || 0;
-  const currentPrice = apiSignal.current_price ?? entryPrice;
+  const entryPrice = Number(apiSignal.avg_entry) || 0;
+  const currentPrice = Number(apiSignal.current_price) || entryPrice;
 
   // Calculate risk/reward ratio
   const rrRatio = currentPrice > 0 && currentPrice < 1
@@ -150,19 +150,19 @@ export function transformApiSignal(apiSignal: {
       currentPrice,
     },
     signal: {
-      consensusPercent: apiSignal.consensus_pct,
-      whaleCount: apiSignal.traders,
-      totalVolume: apiSignal.total_volume,
-      weightedScore: apiSignal.signal_score,
-      signalScore: apiSignal.signal_score,
+      consensusPercent: Number(apiSignal.consensus_pct) || 0,
+      whaleCount: Number(apiSignal.traders) || 0,
+      totalVolume: Number(apiSignal.total_volume) || 0,
+      weightedScore: Number(apiSignal.signal_score) || 0,
+      signalScore: Number(apiSignal.signal_score) || 0,
       tier: apiSignal.tier === 1 || apiSignal.tier === 2 ? apiSignal.tier : null,
       rrRatio,
     },
     // Whale positions not available from API yet - would need separate endpoint
     whalePositions: [],
     checklist: {
-      consensusPass: apiSignal.consensus_pct >= 80,
-      traderCountPass: apiSignal.traders >= 3,
+      consensusPass: Number(apiSignal.consensus_pct) >= 80,
+      traderCountPass: Number(apiSignal.traders) >= 3,
       priceCeilingPass: entryPrice <= 0.55,
       rrRatioPass: rrRatio >= 1.0,
       noHedging: true, // Not available from API
@@ -172,7 +172,7 @@ export function transformApiSignal(apiSignal: {
     firstSeenAt: new Date(apiSignal.first_seen_at),
     lastSeenAt: new Date(apiSignal.last_seen_at),
     myPosition: apiSignal.my_position && apiSignal.my_stake != null
-      ? { side: apiSignal.my_position, stake: apiSignal.my_stake }
+      ? { side: apiSignal.my_position, stake: Number(apiSignal.my_stake) }
       : null,
   };
 }
