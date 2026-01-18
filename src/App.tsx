@@ -7,7 +7,7 @@ import { WhalePlaysPage } from '@/pages/WhalePlaysPage';
 import { LoginPage } from '@/pages/LoginPage';
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Routes>
@@ -29,7 +29,11 @@ function AppRoutes() {
                 <Route
                   path="/signals"
                   element={
-                    isAuthenticated ? (
+                    isLoading ? (
+                      <div className="min-h-[50vh] flex items-center justify-center">
+                        <div className="animate-pulse text-muted-foreground">Loading...</div>
+                      </div>
+                    ) : isAuthenticated ? (
                       <SignalsPage />
                     ) : (
                       <Navigate to="/login" replace />
