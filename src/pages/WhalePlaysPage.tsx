@@ -19,6 +19,7 @@ type Sport = 'NBA' | 'NHL' | 'NFL' | 'CBB' | 'CFB';
 type SportFilter = Sport | 'All';
 type BetTypeFilter = 'All' | 'Totals' | 'Spread' | 'Moneyline';
 type StatusFilter = 'All' | 'open' | 'ended';
+type SortOption = 'consensus' | 'whales' | 'volume';
 
 const sports: Sport[] = ['NBA', 'NHL', 'NFL', 'CBB', 'CFB'];
 const betTypes: BetTypeFilter[] = ['All', 'Totals', 'Spread', 'Moneyline'];
@@ -32,6 +33,7 @@ export function WhalePlaysPage() {
   const statusFilter = (searchParams.get('status') as StatusFilter) || 'open';
   const gameDate = searchParams.get('date') || '';
   const minWhales = searchParams.get('minWhales') || '';
+  const sortBy = (searchParams.get('sort') as SortOption) || 'consensus';
 
   const [minWhalesInput, setMinWhalesInput] = useState<string>(minWhales);
   const [selectedGroup, setSelectedGroup] = useState<ApiGroupedWhaleBet | null>(null);
@@ -41,7 +43,14 @@ export function WhalePlaysPage() {
   const updateParam = useCallback((key: string, value: string) => {
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev);
-      if (value && value !== 'All' && (key !== 'status' || value !== 'open')) {
+      // Remove param if it's the default value
+      const isDefault =
+        (key === 'sport' && value === 'All') ||
+        (key === 'betType' && value === 'All') ||
+        (key === 'status' && value === 'open') ||
+        (key === 'sort' && value === 'consensus') ||
+        !value;
+      if (!isDefault) {
         newParams.set(key, value);
       } else {
         newParams.delete(key);
@@ -85,6 +94,21 @@ export function WhalePlaysPage() {
 
   const groups = data?.groups || [];
   const total = data?.total || 0;
+
+  // Sort groups based on selected option
+  const sortedGroups = useMemo(() => {
+    const sorted = [...groups];
+    switch (sortBy) {
+      case 'consensus':
+        return sorted.sort((a, b) => b.combined_consensus_pct - a.combined_consensus_pct);
+      case 'whales':
+        return sorted.sort((a, b) => b.unique_whale_count - a.unique_whale_count);
+      case 'volume':
+        return sorted.sort((a, b) => b.total_volume - a.total_volume);
+      default:
+        return sorted;
+    }
+  }, [groups, sortBy]);
 
   // Calculate summary stats
   const totalWhales = useMemo(() => {
@@ -235,6 +259,21 @@ export function WhalePlaysPage() {
             </button>
           )}
         </div>
+
+        {/* Sort by */}
+        <Select
+          value={sortBy}
+          onValueChange={(v) => updateParam('sort', v)}
+        >
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="consensus">Consensus %</SelectItem>
+            <SelectItem value="whales">Whale Count</SelectItem>
+            <SelectItem value="volume">Volume</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Grid with loading state */}
@@ -244,13 +283,13 @@ export function WhalePlaysPage() {
         </div>
       ) : isLoading ? (
         <LoadingSpinner message="Finding whale bets..." />
-      ) : groups.length === 0 ? (
+      ) : sortedGroups.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground">
           No whale bets found for these filters.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {groups.map((group) => (
+          {sortedGroups.map((group) => (
             <GroupedWhaleBetCard
               key={group.group_key}
               group={group}
