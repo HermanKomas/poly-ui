@@ -34,10 +34,12 @@ export function WhalePlaysPage() {
   const gameDate = searchParams.get('date') || '';
   const minWhales = searchParams.get('minWhales') || '';
   const minVolume = searchParams.get('minVolume') || '';
+  const maxEntry = searchParams.get('maxEntry') || '';
   const sortBy = (searchParams.get('sort') as SortOption) || 'consensus';
 
   const [minWhalesInput, setMinWhalesInput] = useState<string>(minWhales);
   const [minVolumeInput, setMinVolumeInput] = useState<string>(minVolume);
+  const [maxEntryInput, setMaxEntryInput] = useState<string>(maxEntry);
   const [selectedGroup, setSelectedGroup] = useState<ApiGroupedWhaleBet | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -68,6 +70,7 @@ export function WhalePlaysPage() {
     game_date: gameDate || undefined,
     min_whales: minWhales ? parseInt(minWhales, 10) : undefined,
     min_volume: minVolume ? parseFloat(minVolume) : undefined,
+    max_entry: maxEntry ? parseFloat(maxEntry) : undefined,
     expand: true,
   });
 
@@ -289,6 +292,41 @@ export function WhalePlaysPage() {
               onClick={() => {
                 setMinVolumeInput('');
                 updateParam('minVolume', '');
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Max entry price filter - only shows consensus winners */}
+        <div className="relative">
+          <input
+            type="number"
+            value={maxEntryInput}
+            onChange={(e) => setMaxEntryInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                updateParam('maxEntry', maxEntryInput);
+              }
+            }}
+            onBlur={() => {
+              if (maxEntryInput !== maxEntry) {
+                updateParam('maxEntry', maxEntryInput);
+              }
+            }}
+            className="h-9 w-[120px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Max Entry"
+            min="0"
+            max="1"
+            step="0.01"
+          />
+          {maxEntryInput && (
+            <button
+              onClick={() => {
+                setMaxEntryInput('');
+                updateParam('maxEntry', '');
               }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >

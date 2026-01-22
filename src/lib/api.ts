@@ -329,6 +329,7 @@ export async function getGroupedWhaleBets(params?: {
   game_date?: string;
   min_whales?: number;
   min_volume?: number;
+  max_entry?: number;
   expand?: boolean;
 }): Promise<ApiGroupedWhaleBetsResponse> {
   const searchParams = new URLSearchParams();
@@ -338,6 +339,7 @@ export async function getGroupedWhaleBets(params?: {
   if (params?.game_date) searchParams.set('game_date', params.game_date);
   if (params?.min_whales) searchParams.set('min_whales', String(params.min_whales));
   if (params?.min_volume) searchParams.set('min_volume', String(params.min_volume));
+  if (params?.max_entry) searchParams.set('max_entry', String(params.max_entry));
   if (params?.expand) searchParams.set('expand', 'true');
 
   const query = searchParams.toString();
