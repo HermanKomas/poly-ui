@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -20,12 +21,34 @@ type BetTypeFilter = (typeof betTypes)[number];
 type DateFilter = 'today' | 'yesterday' | 'this_week' | 'all';
 
 export function SignalsPage() {
-  const [sportFilter, setSportFilter] = useState<SportFilter>('All');
-  const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
-  const [dateFilter, setDateFilter] = useState<DateFilter>('this_week');
-  const [sortOption, setSortOption] = useState<SortOption>('created');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read filters from URL params with defaults
+  const sportFilter = (searchParams.get('sport') as SportFilter) || 'All';
+  const betTypeFilter = (searchParams.get('betType') as BetTypeFilter) || 'All';
+  const dateFilter = (searchParams.get('date') as DateFilter) || 'this_week';
+  const sortOption = (searchParams.get('sort') as SortOption) || 'created';
+
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Update URL params helper
+  const updateParam = useCallback((key: string, value: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      // Remove param if it's the default value
+      const isDefault = (key === 'sport' && value === 'All') ||
+                       (key === 'betType' && value === 'All') ||
+                       (key === 'date' && value === 'this_week') ||
+                       (key === 'sort' && value === 'created');
+      if (value && !isDefault) {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+      return newParams;
+    });
+  }, [setSearchParams]);
 
   const { data: signals = [], isLoading } = useSignals(
     sportFilter !== 'All' ? sportFilter : undefined,
@@ -67,7 +90,7 @@ export function SignalsPage() {
           <Badge
             variant={sportFilter === 'All' ? 'default' : 'outline'}
             className="cursor-pointer"
-            onClick={() => setSportFilter('All')}
+            onClick={() => updateParam('sport', 'All')}
           >
             All
           </Badge>
@@ -76,7 +99,7 @@ export function SignalsPage() {
               key={sport}
               variant={sportFilter === sport ? 'default' : 'outline'}
               className="cursor-pointer"
-              onClick={() => setSportFilter(sport)}
+              onClick={() => updateParam('sport', sport)}
             >
               {sport}
             </Badge>
@@ -84,7 +107,7 @@ export function SignalsPage() {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
-          <Select value={betTypeFilter} onValueChange={(v) => setBetTypeFilter(v as BetTypeFilter)}>
+          <Select value={betTypeFilter} onValueChange={(v) => updateParam('betType', v)}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Bet Type" />
             </SelectTrigger>
@@ -97,7 +120,7 @@ export function SignalsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
+          <Select value={dateFilter} onValueChange={(v) => updateParam('date', v)}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Time" />
             </SelectTrigger>
@@ -109,7 +132,7 @@ export function SignalsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+          <Select value={sortOption} onValueChange={(v) => updateParam('sort', v)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>

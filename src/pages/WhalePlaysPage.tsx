@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -23,14 +24,31 @@ const sports: Sport[] = ['NBA', 'NHL', 'NFL', 'CBB', 'CFB'];
 const betTypes: BetTypeFilter[] = ['All', 'Totals', 'Spread', 'Moneyline'];
 
 export function WhalePlaysPage() {
-  const [sportFilter, setSportFilter] = useState<SportFilter>('All');
-  const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-  const [gameDate, setGameDate] = useState<string>('');
-  const [minWhalesInput, setMinWhalesInput] = useState<string>('');
-  const [minWhales, setMinWhales] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read filters from URL params with defaults
+  const sportFilter = (searchParams.get('sport') as SportFilter) || 'All';
+  const betTypeFilter = (searchParams.get('betType') as BetTypeFilter) || 'All';
+  const statusFilter = (searchParams.get('status') as StatusFilter) || 'open';
+  const gameDate = searchParams.get('date') || '';
+  const minWhales = searchParams.get('minWhales') || '';
+
+  const [minWhalesInput, setMinWhalesInput] = useState<string>(minWhales);
   const [selectedGroup, setSelectedGroup] = useState<ApiGroupedWhaleBet | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Update URL params helper
+  const updateParam = useCallback((key: string, value: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (value && value !== 'All' && (key !== 'status' || value !== 'open')) {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+      return newParams;
+    });
+  }, [setSearchParams]);
 
   const { data, isLoading, error } = useGroupedWhaleBets({
     sport: sportFilter !== 'All' ? sportFilter : undefined,
@@ -63,10 +81,6 @@ export function WhalePlaysPage() {
   const handleGroupClick = (group: ApiGroupedWhaleBet) => {
     setSelectedGroup(group);
     setSheetOpen(true);
-  };
-
-  const handleFilterChange = (setter: (value: any) => void, value: any) => {
-    setter(value);
   };
 
   const groups = data?.groups || [];
@@ -121,7 +135,7 @@ export function WhalePlaysPage() {
           <Badge
             variant={sportFilter === 'All' ? 'default' : 'outline'}
             className="cursor-pointer"
-            onClick={() => handleFilterChange(setSportFilter, 'All')}
+            onClick={() => updateParam('sport', 'All')}
           >
             All
           </Badge>
@@ -130,7 +144,7 @@ export function WhalePlaysPage() {
               key={sport}
               variant={sportFilter === sport ? 'default' : 'outline'}
               className="cursor-pointer"
-              onClick={() => handleFilterChange(setSportFilter, sport)}
+              onClick={() => updateParam('sport', sport)}
             >
               {sport}
             </Badge>
@@ -140,7 +154,7 @@ export function WhalePlaysPage() {
         {/* Bet type filter */}
         <Select
           value={betTypeFilter}
-          onValueChange={(v) => handleFilterChange(setBetTypeFilter, v as BetTypeFilter)}
+          onValueChange={(v) => updateParam('betType', v)}
         >
           <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="Bet Type" />
@@ -157,7 +171,7 @@ export function WhalePlaysPage() {
         {/* Status filter */}
         <Select
           value={statusFilter}
-          onValueChange={(v) => handleFilterChange(setStatusFilter, v as StatusFilter)}
+          onValueChange={(v) => updateParam('status', v)}
         >
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Status" />
@@ -174,13 +188,13 @@ export function WhalePlaysPage() {
           <input
             type="date"
             value={gameDate}
-            onChange={(e) => handleFilterChange(setGameDate, e.target.value)}
+            onChange={(e) => updateParam('date', e.target.value)}
             className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
             placeholder="Game Date"
           />
           {gameDate && (
             <button
-              onClick={() => handleFilterChange(setGameDate, '')}
+              onClick={() => updateParam('date', '')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -196,12 +210,12 @@ export function WhalePlaysPage() {
             onChange={(e) => setMinWhalesInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                handleFilterChange(setMinWhales, minWhalesInput);
+                updateParam('minWhales', minWhalesInput);
               }
             }}
             onBlur={() => {
               if (minWhalesInput !== minWhales) {
-                handleFilterChange(setMinWhales, minWhalesInput);
+                updateParam('minWhales', minWhalesInput);
               }
             }}
             className="h-9 w-[110px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
@@ -213,7 +227,7 @@ export function WhalePlaysPage() {
             <button
               onClick={() => {
                 setMinWhalesInput('');
-                handleFilterChange(setMinWhales, '');
+                updateParam('minWhales', '');
               }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
