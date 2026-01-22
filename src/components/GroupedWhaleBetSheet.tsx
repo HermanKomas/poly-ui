@@ -185,10 +185,6 @@ export function GroupedWhaleBetSheet({
   // Determine if this is a totals market (Over/Under tabs) or spread/moneyline (team name tabs)
   const isTotals = group.bet_type?.toLowerCase() === 'total' || group.bet_type?.toLowerCase() === 'totals';
 
-  // Calculate combined stats if we have both directions
-  const totalWhales = group.unique_whale_count + (oppositeGroup?.unique_whale_count || 0);
-  const totalVolume = group.total_volume + (oppositeGroup?.total_volume || 0);
-
   async function handleCopy() {
     if (!group) return;
 
