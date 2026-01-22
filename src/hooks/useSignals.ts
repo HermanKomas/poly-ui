@@ -128,10 +128,11 @@ export function useGroupedWhaleBets(params?: {
   status?: string;
   game_date?: string;
   min_whales?: number;
+  min_volume?: number;
   expand?: boolean;
 }) {
   return useQuery<ApiGroupedWhaleBetsResponse>({
-    queryKey: ['grouped-whale-bets', params?.sport, params?.bet_type, params?.status, params?.game_date, params?.min_whales, params?.expand],
+    queryKey: ['grouped-whale-bets', params?.sport, params?.bet_type, params?.status, params?.game_date, params?.min_whales, params?.min_volume, params?.expand],
     queryFn: async () => {
       if (USE_MOCK_DATA) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -147,6 +148,7 @@ export function useGroupedWhaleBets(params?: {
         status: params?.status && params.status !== 'All' ? params.status : undefined,
         game_date: params?.game_date || undefined,
         min_whales: params?.min_whales || undefined,
+        min_volume: params?.min_volume || undefined,
         expand: params?.expand || undefined,
       });
     },

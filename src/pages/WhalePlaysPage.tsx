@@ -33,9 +33,11 @@ export function WhalePlaysPage() {
   const statusFilter = (searchParams.get('status') as StatusFilter) || 'open';
   const gameDate = searchParams.get('date') || '';
   const minWhales = searchParams.get('minWhales') || '';
+  const minVolume = searchParams.get('minVolume') || '';
   const sortBy = (searchParams.get('sort') as SortOption) || 'consensus';
 
   const [minWhalesInput, setMinWhalesInput] = useState<string>(minWhales);
+  const [minVolumeInput, setMinVolumeInput] = useState<string>(minVolume);
   const [selectedGroup, setSelectedGroup] = useState<ApiGroupedWhaleBet | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -65,6 +67,7 @@ export function WhalePlaysPage() {
     status: statusFilter !== 'All' ? statusFilter : undefined,
     game_date: gameDate || undefined,
     min_whales: minWhales ? parseInt(minWhales, 10) : undefined,
+    min_volume: minVolume ? parseFloat(minVolume) : undefined,
     expand: true,
   });
 
@@ -252,6 +255,40 @@ export function WhalePlaysPage() {
               onClick={() => {
                 setMinWhalesInput('');
                 updateParam('minWhales', '');
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Min volume filter */}
+        <div className="relative">
+          <input
+            type="number"
+            value={minVolumeInput}
+            onChange={(e) => setMinVolumeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                updateParam('minVolume', minVolumeInput);
+              }
+            }}
+            onBlur={() => {
+              if (minVolumeInput !== minVolume) {
+                updateParam('minVolume', minVolumeInput);
+              }
+            }}
+            className="h-9 w-[120px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Min Volume"
+            min="0"
+            step="100"
+          />
+          {minVolumeInput && (
+            <button
+              onClick={() => {
+                setMinVolumeInput('');
+                updateParam('minVolume', '');
               }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
