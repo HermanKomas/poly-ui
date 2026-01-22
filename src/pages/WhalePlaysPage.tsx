@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -9,11 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { WhalePlayCard } from '@/components/WhalePlayCard';
-import { WhalePlaySheet } from '@/components/WhalePlaySheet';
+import { GroupedWhaleBetCard } from '@/components/GroupedWhaleBetCard';
+import { GroupedWhaleBetSheet } from '@/components/GroupedWhaleBetSheet';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { useWhalePlays } from '@/hooks/useSignals';
-import type { ApiWhalePlay } from '@/lib/api';
+import { useGroupedWhaleBets } from '@/hooks/useSignals';
+import type { ApiGroupedWhaleBet } from '@/lib/api';
 
 type Sport = 'NBA' | 'NHL' | 'NFL' | 'CBB' | 'CFB';
 type SportFilter = Sport | 'All';
@@ -26,50 +25,61 @@ const betTypes: BetTypeFilter[] = ['All', 'Totals', 'Spread', 'Moneyline'];
 export function WhalePlaysPage() {
   const [sportFilter, setSportFilter] = useState<SportFilter>('All');
   const [betTypeFilter, setBetTypeFilter] = useState<BetTypeFilter>('All');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open'); // Default to Open
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
   const [gameDate, setGameDate] = useState<string>('');
-  // Input values (local state for typing)
-  const [minVolumeInput, setMinVolumeInput] = useState<string>('');
   const [minWhalesInput, setMinWhalesInput] = useState<string>('');
-  // Applied values (sent to API on Enter)
-  const [minVolume, setMinVolume] = useState<string>('');
   const [minWhales, setMinWhales] = useState<string>('');
-  const [allOneSide, setAllOneSide] = useState<boolean>(false);
-  const [page, setPage] = useState(1);
-  const [selectedPlay, setSelectedPlay] = useState<ApiWhalePlay | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<ApiGroupedWhaleBet | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const { data, isLoading, error } = useWhalePlays({
+  const { data, isLoading, error } = useGroupedWhaleBets({
     sport: sportFilter !== 'All' ? sportFilter : undefined,
     bet_type: betTypeFilter !== 'All' ? betTypeFilter : undefined,
     status: statusFilter !== 'All' ? statusFilter : undefined,
     game_date: gameDate || undefined,
-    min_volume: minVolume ? parseFloat(minVolume) : undefined,
     min_whales: minWhales ? parseInt(minWhales, 10) : undefined,
-    all_one_side: allOneSide || undefined,
-    page,
-    page_size: 25,
+    expand: true,
   });
 
-  const handlePlayClick = (play: ApiWhalePlay) => {
-    setSelectedPlay(play);
+  // Find the opposite direction group when one is selected
+  const oppositeGroup = useMemo(() => {
+    if (!selectedGroup || !data?.groups) return null;
+
+    const isOver = selectedGroup.direction.toLowerCase() === 'over';
+    const isUnder = selectedGroup.direction.toLowerCase() === 'under';
+
+    return data.groups.find((g) => {
+      if (g.event_slug !== selectedGroup.event_slug) return false;
+      if (g.bet_type !== selectedGroup.bet_type) return false;
+      if (g.direction === selectedGroup.direction) return false;
+
+      if (isOver && g.direction.toLowerCase() === 'under') return true;
+      if (isUnder && g.direction.toLowerCase() === 'over') return true;
+
+      return true;
+    });
+  }, [selectedGroup, data?.groups]);
+
+  const handleGroupClick = (group: ApiGroupedWhaleBet) => {
+    setSelectedGroup(group);
     setSheetOpen(true);
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Reset to page 1 when filters change
   const handleFilterChange = (setter: (value: any) => void, value: any) => {
     setter(value);
-    setPage(1);
   };
 
-  const plays = data?.plays || [];
-  const totalPages = data?.total_pages || 1;
+  const groups = data?.groups || [];
   const total = data?.total || 0;
+
+  // Calculate summary stats
+  const totalWhales = useMemo(() => {
+    return groups.reduce((sum, g) => sum + g.unique_whale_count, 0);
+  }, [groups]);
+
+  const totalVolume = useMemo(() => {
+    return groups.reduce((sum, g) => sum + g.total_volume, 0);
+  }, [groups]);
 
   return (
     <div className="p-4">
@@ -81,7 +91,7 @@ export function WhalePlaysPage() {
         </p>
       </div>
 
-      {/* Stats row - show placeholder when loading */}
+      {/* Stats row */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
         {isLoading ? (
           <>
@@ -93,20 +103,18 @@ export function WhalePlaysPage() {
           <>
             <span>Active Positions: <strong className="text-foreground">{total}</strong></span>
             <span>
-              Total Whales: <strong className="text-foreground">
-                {plays.reduce((sum, p) => sum + p.total_whale_count, 0)}
-              </strong>
+              Total Whales: <strong className="text-foreground">{totalWhales}</strong>
             </span>
             <span>
               Total Volume: <strong className="text-foreground">
-                ${plays.reduce((sum, p) => sum + p.total_volume, 0).toLocaleString()}
+                ${totalVolume.toLocaleString()}
               </strong>
             </span>
           </>
         )}
       </div>
 
-      {/* Filters row - always visible */}
+      {/* Filters row */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Sport filter chips */}
         <div className="flex flex-wrap gap-1">
@@ -180,40 +188,6 @@ export function WhalePlaysPage() {
           )}
         </div>
 
-        {/* Min volume filter */}
-        <div className="relative">
-          <input
-            type="number"
-            value={minVolumeInput}
-            onChange={(e) => setMinVolumeInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleFilterChange(setMinVolume, minVolumeInput);
-              }
-            }}
-            onBlur={() => {
-              if (minVolumeInput !== minVolume) {
-                handleFilterChange(setMinVolume, minVolumeInput);
-              }
-            }}
-            className="h-9 w-[120px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
-            placeholder="Min Volume"
-            min="0"
-            step="100"
-          />
-          {minVolumeInput && (
-            <button
-              onClick={() => {
-                setMinVolumeInput('');
-                handleFilterChange(setMinVolume, '');
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
         {/* Min whales filter */}
         <div className="relative">
           <input
@@ -247,17 +221,6 @@ export function WhalePlaysPage() {
             </button>
           )}
         </div>
-
-        {/* All One Side toggle */}
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={allOneSide}
-            onChange={(e) => handleFilterChange(setAllOneSide, e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-          />
-          <span className="text-sm whitespace-nowrap">All One Side</span>
-        </label>
       </div>
 
       {/* Grid with loading state */}
@@ -267,80 +230,26 @@ export function WhalePlaysPage() {
         </div>
       ) : isLoading ? (
         <LoadingSpinner message="Finding whale bets..." />
-      ) : plays.length === 0 ? (
+      ) : groups.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground">
           No whale bets found for these filters.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {plays.map((play) => (
-            <WhalePlayCard
-              key={play.condition_id}
-              play={play}
-              onClick={() => handlePlayClick(play)}
+          {groups.map((group) => (
+            <GroupedWhaleBetCard
+              key={group.group_key}
+              group={group}
+              onClick={() => handleGroupClick(group)}
             />
           ))}
         </div>
       )}
 
-      {/* Pagination - only show when not loading and has pages */}
-      {!isLoading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-
-          <div className="flex items-center gap-1">
-            {/* Show page numbers */}
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum: number;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (page <= 3) {
-                pageNum = i + 1;
-              } else if (page >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = page - 2 + i;
-              }
-
-              return (
-                <Button
-                  key={pageNum}
-                  variant={pageNum === page ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-8 h-8 p-0"
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === totalPages}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-
-          <span className="text-sm text-muted-foreground ml-2">
-            Page {page} of {totalPages}
-          </span>
-        </div>
-      )}
-
       {/* Sheet */}
-      <WhalePlaySheet
-        play={selectedPlay}
+      <GroupedWhaleBetSheet
+        group={selectedGroup}
+        oppositeGroup={oppositeGroup}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
       />

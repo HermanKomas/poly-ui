@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSignals, getMeta, refreshSignals as apiRefreshSignals, getWhalePlays, type ApiWhalePlaysResponse } from '@/lib/api';
+import {
+  getSignals,
+  getMeta,
+  refreshSignals as apiRefreshSignals,
+  getWhalePlays,
+  getGroupedWhaleBets,
+  type ApiWhalePlaysResponse,
+  type ApiGroupedWhaleBetsResponse,
+} from '@/lib/api';
 import { transformApiSignal, type Signal } from '@/types/signal';
 import { mockSignals } from '@/data/mockSignals';
 
@@ -106,6 +114,40 @@ export function useWhalePlays(params?: {
         all_one_side: params?.all_one_side || undefined,
         page: params?.page,
         page_size: params?.page_size ?? 25,
+      });
+    },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+// Grouped Whale Bets hook (spec-0002)
+export function useGroupedWhaleBets(params?: {
+  sport?: string;
+  bet_type?: string;
+  status?: string;
+  game_date?: string;
+  min_whales?: number;
+  expand?: boolean;
+}) {
+  return useQuery<ApiGroupedWhaleBetsResponse>({
+    queryKey: ['grouped-whale-bets', params?.sport, params?.bet_type, params?.status, params?.game_date, params?.min_whales, params?.expand],
+    queryFn: async () => {
+      if (USE_MOCK_DATA) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return {
+          groups: [],
+          total: 0,
+        };
+      }
+
+      return getGroupedWhaleBets({
+        sport: params?.sport && params.sport !== 'All' ? params.sport : undefined,
+        bet_type: params?.bet_type && params.bet_type !== 'All' ? params.bet_type : undefined,
+        status: params?.status && params.status !== 'All' ? params.status : undefined,
+        game_date: params?.game_date || undefined,
+        min_whales: params?.min_whales || undefined,
+        expand: params?.expand || undefined,
       });
     },
     staleTime: 60 * 1000,

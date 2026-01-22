@@ -279,3 +279,65 @@ export async function getWhalePlays(params?: {
   const query = searchParams.toString();
   return fetchApi(`/api/whale-plays${query ? `?${query}` : ''}`);
 }
+
+// Grouped Whale Bets Types and Functions (spec-0002)
+export interface ApiGroupedLineWhale {
+  trader_wallet: string;
+  username: string | null;
+  rank: number | null;
+  size: number;
+  avg_price: number;
+  is_hedging: boolean;
+}
+
+export interface ApiGroupedLine {
+  condition_id: string;
+  outcome: string;
+  whale_count: number;
+  volume: number;
+  avg_entry: number;
+  polymarket_url: string | null;
+  market_title: string | null;
+  whales: ApiGroupedLineWhale[];
+}
+
+export interface ApiGroupedWhaleBet {
+  group_key: string;
+  event_slug: string;
+  event_title: string | null;
+  bet_type: string | null;
+  direction: string;
+  sport: string | null;
+  event_date: string | null;
+  unique_whale_count: number;
+  total_volume: number;
+  combined_consensus_pct: number;
+  line_count: number;
+  primary_line: ApiGroupedLine | null;
+  other_lines: ApiGroupedLine[];
+}
+
+export interface ApiGroupedWhaleBetsResponse {
+  groups: ApiGroupedWhaleBet[];
+  total: number;
+}
+
+export async function getGroupedWhaleBets(params?: {
+  sport?: string;
+  bet_type?: string;
+  status?: string;
+  game_date?: string;
+  min_whales?: number;
+  expand?: boolean;
+}): Promise<ApiGroupedWhaleBetsResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.sport) searchParams.set('sport', params.sport);
+  if (params?.bet_type) searchParams.set('bet_type', params.bet_type);
+  if (params?.status) searchParams.set('status', params.status);
+  if (params?.game_date) searchParams.set('game_date', params.game_date);
+  if (params?.min_whales) searchParams.set('min_whales', String(params.min_whales));
+  if (params?.expand) searchParams.set('expand', 'true');
+
+  const query = searchParams.toString();
+  return fetchApi(`/api/whale-bets/grouped${query ? `?${query}` : ''}`);
+}
