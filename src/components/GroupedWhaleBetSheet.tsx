@@ -25,8 +25,6 @@ const sportColors: Record<Sport, string> = {
 
 interface GroupedWhaleBetSheetProps {
   group: ApiGroupedWhaleBet | null;
-  // For showing both directions, we need the opposite direction group too
-  oppositeGroup?: ApiGroupedWhaleBet | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -171,7 +169,6 @@ function LineCard({ line, isPrimary, defaultExpanded = false }: LineCardProps) {
 
 export function GroupedWhaleBetSheet({
   group,
-  oppositeGroup,
   open,
   onOpenChange,
 }: GroupedWhaleBetSheetProps) {
@@ -181,6 +178,10 @@ export function GroupedWhaleBetSheet({
 
   const sport = group.sport as Sport | null;
   const sheetTitle = `${group.event_title || group.event_slug} - ${group.bet_type || 'Market'}`;
+
+  // Both directions now come from the same group
+  const winning = group.winning_direction;
+  const losing = group.losing_direction;
 
   // Determine if this is a totals market (Over/Under tabs) or spread/moneyline (team name tabs)
   const isTotals = group.bet_type?.toLowerCase() === 'total' || group.bet_type?.toLowerCase() === 'totals';
@@ -192,26 +193,42 @@ export function GroupedWhaleBetSheet({
       `# ${group.event_title || group.event_slug}`,
       `**${group.sport} ${group.bet_type}** | ${formatDateTime(group.event_date)}`,
       '',
-      `## ${group.direction.toUpperCase()} (${group.unique_whale_count} whales, ${group.combined_consensus_pct}% consensus)`,
+      `## ${winning.direction.toUpperCase()} (${winning.unique_whale_count} whales, ${group.combined_consensus_pct}% consensus)`,
       '',
     ];
 
     // Add primary line
-    if (group.primary_line) {
-      lines.push(`### Primary: ${group.primary_line.outcome}`);
-      lines.push(`${group.primary_line.whale_count} whales | ${formatCurrency(group.primary_line.volume)} | Avg: ${formatPrice(group.primary_line.avg_entry)}`);
+    if (winning.primary_line) {
+      lines.push(`### Primary: ${winning.primary_line.outcome}`);
+      lines.push(`${winning.primary_line.whale_count} whales | ${formatCurrency(winning.primary_line.volume)} | Avg: ${formatPrice(winning.primary_line.avg_entry)}`);
       lines.push('');
     }
 
-    // Add other lines
-    for (const line of group.other_lines) {
+    // Add other lines from winning direction
+    for (const line of winning.other_lines) {
       lines.push(`### ${line.outcome}`);
       lines.push(`${line.whale_count} whales | ${formatCurrency(line.volume)} | Avg: ${formatPrice(line.avg_entry)}`);
       lines.push('');
     }
 
-    if (group.primary_line?.polymarket_url) {
-      lines.push(`[View on Polymarket](${group.primary_line.polymarket_url})`);
+    // Add losing direction if has whales
+    if (losing && losing.unique_whale_count > 0) {
+      lines.push(`## ${losing.direction.toUpperCase()} (${losing.unique_whale_count} whales)`);
+      lines.push('');
+      if (losing.primary_line) {
+        lines.push(`### Primary: ${losing.primary_line.outcome}`);
+        lines.push(`${losing.primary_line.whale_count} whales | ${formatCurrency(losing.primary_line.volume)} | Avg: ${formatPrice(losing.primary_line.avg_entry)}`);
+        lines.push('');
+      }
+      for (const line of losing.other_lines) {
+        lines.push(`### ${line.outcome}`);
+        lines.push(`${line.whale_count} whales | ${formatCurrency(line.volume)} | Avg: ${formatPrice(line.avg_entry)}`);
+        lines.push('');
+      }
+    }
+
+    if (winning.primary_line?.polymarket_url) {
+      lines.push(`[View on Polymarket](${winning.primary_line.polymarket_url})`);
     }
 
     try {
@@ -223,15 +240,15 @@ export function GroupedWhaleBetSheet({
     }
   }
 
-  // All lines for the current direction
-  const allLines = group.primary_line
-    ? [group.primary_line, ...group.other_lines]
-    : group.other_lines;
+  // All lines for the winning direction
+  const winningLines = winning.primary_line
+    ? [winning.primary_line, ...winning.other_lines]
+    : winning.other_lines;
 
-  // All lines for the opposite direction (if available)
-  const oppositeLines = oppositeGroup?.primary_line
-    ? [oppositeGroup.primary_line, ...oppositeGroup.other_lines]
-    : oppositeGroup?.other_lines || [];
+  // All lines for the losing direction (if available)
+  const losingLines = losing?.primary_line
+    ? [losing.primary_line, ...losing.other_lines]
+    : losing?.other_lines || [];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -256,50 +273,50 @@ export function GroupedWhaleBetSheet({
             <div className="rounded-lg border p-4 bg-muted/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-muted-foreground">
-                  OVERALL DIRECTION
+                  WINNING DIRECTION
                 </span>
                 <Badge
                   variant="secondary"
                   className={`${
-                    group.direction.toLowerCase() === 'over'
+                    winning.direction.toLowerCase() === 'over'
                       ? 'bg-emerald-100 text-emerald-700'
-                      : group.direction.toLowerCase() === 'under'
+                      : winning.direction.toLowerCase() === 'under'
                       ? 'bg-red-100 text-red-700'
                       : 'bg-blue-100 text-blue-700'
                   }`}
                 >
-                  {group.direction.toUpperCase()}
+                  {winning.direction.toUpperCase()}
                 </Badge>
               </div>
               <div className="text-sm text-muted-foreground mb-3">
-                {group.unique_whale_count} whales · {formatCurrency(group.total_volume)} volume · {group.combined_consensus_pct.toFixed(0)}% consensus
+                {winning.unique_whale_count} whales · {formatCurrency(winning.total_volume)} volume · {group.combined_consensus_pct.toFixed(0)}% consensus
               </div>
               <Progress value={group.combined_consensus_pct} className="h-2" />
             </div>
 
-            {/* Tabs for directions */}
-            <Tabs defaultValue={group.direction} className="w-full">
+            {/* Tabs for directions - both directions always available */}
+            <Tabs defaultValue={winning.direction} className="w-full">
               <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value={group.direction} className="text-sm">
-                  {isTotals ? group.direction.toUpperCase() : group.direction}
-                  <span className="ml-1 text-muted-foreground">({group.unique_whale_count})</span>
+                <TabsTrigger value={winning.direction} className="text-sm">
+                  {isTotals ? winning.direction.toUpperCase() : winning.direction}
+                  <span className="ml-1 text-muted-foreground">({winning.unique_whale_count})</span>
                 </TabsTrigger>
-                {oppositeGroup ? (
-                  <TabsTrigger value={oppositeGroup.direction} className="text-sm">
-                    {isTotals ? oppositeGroup.direction.toUpperCase() : oppositeGroup.direction}
-                    <span className="ml-1 text-muted-foreground">({oppositeGroup.unique_whale_count})</span>
+                {losing ? (
+                  <TabsTrigger value={losing.direction} className="text-sm">
+                    {isTotals ? losing.direction.toUpperCase() : losing.direction}
+                    <span className="ml-1 text-muted-foreground">({losing.unique_whale_count})</span>
                   </TabsTrigger>
                 ) : (
                   <TabsTrigger value="opposite" disabled className="text-sm opacity-50">
-                    {isTotals ? (group.direction.toLowerCase() === 'over' ? 'UNDER' : 'OVER') : 'Other'}
+                    {isTotals ? (winning.direction.toLowerCase() === 'over' ? 'UNDER' : 'OVER') : 'Other'}
                     <span className="ml-1">(0)</span>
                   </TabsTrigger>
                 )}
               </TabsList>
 
-              {/* Current direction tab content */}
-              <TabsContent value={group.direction} className="mt-4 space-y-3">
-                {allLines.map((line, idx) => (
+              {/* Winning direction tab content */}
+              <TabsContent value={winning.direction} className="mt-4 space-y-3">
+                {winningLines.map((line, idx) => (
                   <LineCard
                     key={line.condition_id}
                     line={line}
@@ -309,17 +326,23 @@ export function GroupedWhaleBetSheet({
                 ))}
               </TabsContent>
 
-              {/* Opposite direction tab content */}
-              {oppositeGroup && (
-                <TabsContent value={oppositeGroup.direction} className="mt-4 space-y-3">
-                  {oppositeLines.map((line, idx) => (
-                    <LineCard
-                      key={line.condition_id}
-                      line={line}
-                      isPrimary={idx === 0}
-                      defaultExpanded={idx === 0}
-                    />
-                  ))}
+              {/* Losing direction tab content */}
+              {losing && (
+                <TabsContent value={losing.direction} className="mt-4 space-y-3">
+                  {losingLines.length > 0 ? (
+                    losingLines.map((line, idx) => (
+                      <LineCard
+                        key={line.condition_id}
+                        line={line}
+                        isPrimary={idx === 0}
+                        defaultExpanded={idx === 0}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No whale positions on this side
+                    </div>
+                  )}
                 </TabsContent>
               )}
             </Tabs>
@@ -329,10 +352,10 @@ export function GroupedWhaleBetSheet({
         {/* Fixed bottom actions */}
         <div className="sticky bottom-0 bg-background border-t p-4">
           <div className="flex items-center gap-2">
-            {group.primary_line?.polymarket_url && (
+            {winning.primary_line?.polymarket_url && (
               <Button asChild className="flex-1">
                 <a
-                  href={group.primary_line.polymarket_url}
+                  href={winning.primary_line.polymarket_url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

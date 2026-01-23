@@ -301,20 +301,35 @@ export interface ApiGroupedLine {
   whales: ApiGroupedLineWhale[];
 }
 
+/**
+ * Data for one direction (e.g., Over or Under) within a grouped whale bet.
+ */
+export interface ApiDirectionData {
+  direction: string;
+  unique_whale_count: number;
+  total_volume: number;
+  avg_entry: number;
+  line_count: number;
+  primary_line: ApiGroupedLine | null;
+  other_lines: ApiGroupedLine[];
+}
+
+/**
+ * Whale bet grouped by event + bet_type (direction-agnostic).
+ *
+ * Contains BOTH directions' data. Filters are applied to winning_direction only -
+ * once a market passes filters, all whale positions on both sides are returned.
+ */
 export interface ApiGroupedWhaleBet {
   group_key: string;
   event_slug: string;
   event_title: string | null;
   bet_type: string | null;
-  direction: string;
   sport: string | null;
   event_date: string | null;
-  unique_whale_count: number;
-  total_volume: number;
   combined_consensus_pct: number;
-  line_count: number;
-  primary_line: ApiGroupedLine | null;
-  other_lines: ApiGroupedLine[];
+  winning_direction: ApiDirectionData;
+  losing_direction: ApiDirectionData | null;
 }
 
 export interface ApiGroupedWhaleBetsResponse {

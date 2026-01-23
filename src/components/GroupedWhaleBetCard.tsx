@@ -79,8 +79,12 @@ export function GroupedWhaleBetCard({ group, onClick }: GroupedWhaleBetCardProps
   const sport = group.sport as Sport | null;
   const isEnded = group.event_date && new Date(group.event_date).getTime() < Date.now() - 4 * 60 * 60 * 1000;
 
+  // Use winning_direction for display
+  const winning = group.winning_direction;
+  const losing = group.losing_direction;
+
   // Format direction for display
-  const directionDisplay = group.direction.toUpperCase();
+  const directionDisplay = winning.direction.toUpperCase();
   const isOver = directionDisplay === 'OVER';
   const isUnder = directionDisplay === 'UNDER';
 
@@ -106,7 +110,7 @@ export function GroupedWhaleBetCard({ group, onClick }: GroupedWhaleBetCardProps
           </div>
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <span className="inline-block w-4 h-4 text-center">🐋</span>
-            {group.unique_whale_count} whale{group.unique_whale_count !== 1 ? 's' : ''}
+            {winning.unique_whale_count} whale{winning.unique_whale_count !== 1 ? 's' : ''}
           </span>
         </div>
 
@@ -132,27 +136,33 @@ export function GroupedWhaleBetCard({ group, onClick }: GroupedWhaleBetCardProps
           <span className="text-sm font-medium">
             {group.combined_consensus_pct.toFixed(0)}% consensus
           </span>
+          {/* Show losing direction indicator if whales exist on opposite side */}
+          {losing && losing.unique_whale_count > 0 && (
+            <span className="text-xs text-muted-foreground">
+              vs {losing.unique_whale_count} {losing.direction}
+            </span>
+          )}
         </div>
 
         {/* Primary line info */}
-        {group.primary_line && (
+        {winning.primary_line && (
           <div className="text-xs text-muted-foreground mb-2">
             <span className="font-medium text-foreground">
-              {formatLineDisplay(group.primary_line.outcome, group.primary_line.market_title)}
+              {formatLineDisplay(winning.primary_line.outcome, winning.primary_line.market_title)}
             </span>
             <span className="mx-1">·</span>
-            <span>{group.primary_line.whale_count} whales</span>
+            <span>{winning.primary_line.whale_count} whales</span>
             <span className="mx-1">·</span>
-            <span>{formatVolume(group.primary_line.volume)}</span>
+            <span>{formatVolume(winning.primary_line.volume)}</span>
           </div>
         )}
 
         {/* Lines count and game time */}
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
-            {group.line_count} line{group.line_count !== 1 ? 's' : ''}
+            {winning.line_count} line{winning.line_count !== 1 ? 's' : ''}
             <span className="mx-1">·</span>
-            {formatVolume(group.total_volume)} total
+            {formatVolume(winning.total_volume)} total
           </span>
           <span className="text-muted-foreground">
             {formatGameTime(group.event_date)}

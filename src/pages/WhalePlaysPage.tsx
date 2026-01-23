@@ -74,25 +74,6 @@ export function WhalePlaysPage() {
     expand: true,
   });
 
-  // Find the opposite direction group when one is selected
-  const oppositeGroup = useMemo(() => {
-    if (!selectedGroup || !data?.groups) return null;
-
-    const isOver = selectedGroup.direction.toLowerCase() === 'over';
-    const isUnder = selectedGroup.direction.toLowerCase() === 'under';
-
-    return data.groups.find((g) => {
-      if (g.event_slug !== selectedGroup.event_slug) return false;
-      if (g.bet_type !== selectedGroup.bet_type) return false;
-      if (g.direction === selectedGroup.direction) return false;
-
-      if (isOver && g.direction.toLowerCase() === 'under') return true;
-      if (isUnder && g.direction.toLowerCase() === 'over') return true;
-
-      return true;
-    });
-  }, [selectedGroup, data?.groups]);
-
   const handleGroupClick = (group: ApiGroupedWhaleBet) => {
     setSelectedGroup(group);
     setSheetOpen(true);
@@ -101,28 +82,33 @@ export function WhalePlaysPage() {
   const groups = data?.groups || [];
   const total = data?.total || 0;
 
-  // Sort groups based on selected option
+  // Sort groups based on selected option (using winning_direction metrics)
   const sortedGroups = useMemo(() => {
     const sorted = [...groups];
     switch (sortBy) {
       case 'consensus':
         return sorted.sort((a, b) => b.combined_consensus_pct - a.combined_consensus_pct);
       case 'whales':
-        return sorted.sort((a, b) => b.unique_whale_count - a.unique_whale_count);
+        return sorted.sort((a, b) => b.winning_direction.unique_whale_count - a.winning_direction.unique_whale_count);
       case 'volume':
-        return sorted.sort((a, b) => b.total_volume - a.total_volume);
+        return sorted.sort((a, b) => b.winning_direction.total_volume - a.winning_direction.total_volume);
       default:
         return sorted;
     }
   }, [groups, sortBy]);
 
-  // Calculate summary stats
+  // Calculate summary stats (using winning_direction metrics)
   const totalWhales = useMemo(() => {
-    return groups.reduce((sum, g) => sum + g.unique_whale_count, 0);
+    return groups.reduce((sum, g) => sum + g.winning_direction.unique_whale_count, 0);
   }, [groups]);
 
   const totalVolume = useMemo(() => {
-    return groups.reduce((sum, g) => sum + g.total_volume, 0);
+    // Sum both directions' volumes for total market volume
+    return groups.reduce((sum, g) => {
+      const winningVol = g.winning_direction.total_volume;
+      const losingVol = g.losing_direction?.total_volume || 0;
+      return sum + winningVol + losingVol;
+    }, 0);
   }, [groups]);
 
   return (
@@ -374,10 +360,9 @@ export function WhalePlaysPage() {
         </div>
       )}
 
-      {/* Sheet */}
+      {/* Sheet - both directions now included in single group */}
       <GroupedWhaleBetSheet
         group={selectedGroup}
-        oppositeGroup={oppositeGroup}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
       />
