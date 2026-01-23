@@ -87,11 +87,11 @@ export function WhalePlaysPage() {
     const sorted = [...groups];
     switch (sortBy) {
       case 'consensus':
-        return sorted.sort((a, b) => b.combined_consensus_pct - a.combined_consensus_pct);
+        return sorted.sort((a, b) => (b.combined_consensus_pct ?? 0) - (a.combined_consensus_pct ?? 0));
       case 'whales':
-        return sorted.sort((a, b) => b.winning_direction.unique_whale_count - a.winning_direction.unique_whale_count);
+        return sorted.sort((a, b) => (b.winning_direction?.unique_whale_count ?? 0) - (a.winning_direction?.unique_whale_count ?? 0));
       case 'volume':
-        return sorted.sort((a, b) => b.winning_direction.total_volume - a.winning_direction.total_volume);
+        return sorted.sort((a, b) => (b.winning_direction?.total_volume ?? 0) - (a.winning_direction?.total_volume ?? 0));
       default:
         return sorted;
     }
@@ -99,14 +99,14 @@ export function WhalePlaysPage() {
 
   // Calculate summary stats (using winning_direction metrics)
   const totalWhales = useMemo(() => {
-    return groups.reduce((sum, g) => sum + g.winning_direction.unique_whale_count, 0);
+    return groups.reduce((sum, g) => sum + (g.winning_direction?.unique_whale_count ?? 0), 0);
   }, [groups]);
 
   const totalVolume = useMemo(() => {
     // Sum both directions' volumes for total market volume
     return groups.reduce((sum, g) => {
-      const winningVol = g.winning_direction.total_volume;
-      const losingVol = g.losing_direction?.total_volume || 0;
+      const winningVol = g.winning_direction?.total_volume ?? 0;
+      const losingVol = g.losing_direction?.total_volume ?? 0;
       return sum + winningVol + losingVol;
     }, 0);
   }, [groups]);

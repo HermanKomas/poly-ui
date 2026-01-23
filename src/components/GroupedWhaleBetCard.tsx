@@ -17,7 +17,8 @@ interface GroupedWhaleBetCardProps {
   onClick: () => void;
 }
 
-function formatVolume(amount: number): string {
+function formatVolume(amount: number | null | undefined): string {
+  if (amount == null || isNaN(amount)) return '$0';
   if (amount >= 1000) {
     return `$${(amount / 1000).toFixed(1)}k`;
   }
@@ -79,12 +80,17 @@ export function GroupedWhaleBetCard({ group, onClick }: GroupedWhaleBetCardProps
   const sport = group.sport as Sport | null;
   const isEnded = group.event_date && new Date(group.event_date).getTime() < Date.now() - 4 * 60 * 60 * 1000;
 
-  // Use winning_direction for display
+  // Use winning_direction for display - guard against missing data
   const winning = group.winning_direction;
   const losing = group.losing_direction;
 
+  // Early return if winning_direction is missing (data quality issue)
+  if (!winning) {
+    return null;
+  }
+
   // Format direction for display
-  const directionDisplay = winning.direction.toUpperCase();
+  const directionDisplay = (winning.direction ?? 'Unknown').toUpperCase();
   const isOver = directionDisplay === 'OVER';
   const isUnder = directionDisplay === 'UNDER';
 
@@ -134,7 +140,7 @@ export function GroupedWhaleBetCard({ group, onClick }: GroupedWhaleBetCardProps
             {directionDisplay}
           </Badge>
           <span className="text-sm font-medium">
-            {group.combined_consensus_pct.toFixed(0)}% consensus
+            {(group.combined_consensus_pct ?? 0).toFixed(0)}% consensus
           </span>
           {/* Show losing direction indicator if whales exist on opposite side */}
           {losing && losing.unique_whale_count > 0 && (

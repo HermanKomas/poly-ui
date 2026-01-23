@@ -41,7 +41,8 @@ function formatDateTime(dateStr: string | null): string {
   }).format(date);
 }
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number | null | undefined): string {
+  if (amount == null || isNaN(amount)) return '$0';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -50,7 +51,8 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function formatPrice(price: number): string {
+function formatPrice(price: number | null | undefined): string {
+  if (price == null || isNaN(price)) return '0¢';
   return `${(price * 100).toFixed(0)}¢`;
 }
 
@@ -183,6 +185,22 @@ export function GroupedWhaleBetSheet({
   const winning = group.winning_direction;
   const losing = group.losing_direction;
 
+  // Guard against missing winning_direction (data quality issue)
+  if (!winning) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-lg p-6">
+          <SheetHeader>
+            <SheetTitle>Data Error</SheetTitle>
+          </SheetHeader>
+          <p className="text-muted-foreground mt-4">
+            Unable to load whale bet data. Please try refreshing.
+          </p>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   // Determine if this is a totals market (Over/Under tabs) or spread/moneyline (team name tabs)
   const isTotals = group.bet_type?.toLowerCase() === 'total' || group.bet_type?.toLowerCase() === 'totals';
 
@@ -289,9 +307,9 @@ export function GroupedWhaleBetSheet({
                 </Badge>
               </div>
               <div className="text-sm text-muted-foreground mb-3">
-                {winning.unique_whale_count} whales · {formatCurrency(winning.total_volume)} volume · {group.combined_consensus_pct.toFixed(0)}% consensus
+                {winning.unique_whale_count ?? 0} whales · {formatCurrency(winning.total_volume)} volume · {(group.combined_consensus_pct ?? 0).toFixed(0)}% consensus
               </div>
-              <Progress value={group.combined_consensus_pct} className="h-2" />
+              <Progress value={group.combined_consensus_pct ?? 0} className="h-2" />
             </div>
 
             {/* Tabs for directions - both directions always available */}
